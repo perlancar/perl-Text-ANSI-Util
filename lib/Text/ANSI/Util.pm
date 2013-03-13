@@ -1,9 +1,10 @@
 package Text::ANSI::Util;
 
 use 5.010001;
-use strict;
-use warnings;
 use locale;
+use strict;
+use utf8;
+use warnings;
 
 use List::Util qw(max);
 use Text::CharWidth qw(mbswidth);
@@ -15,8 +16,9 @@ our @EXPORT    = qw(
                        ta_length
                        ta_mbswidth
                        ta_mbswidth_height
-                       ta_strip
                        ta_mbwrap
+                       ta_strip
+                       ta_wrap
                );
 
 # VERSION
@@ -82,8 +84,8 @@ sub ta_mbswidth {
     ta_mbswidth_height($text)->[0];
 }
 
-sub ta_mbwrap {
-    my ($text, $width, $opts) = @_;
+sub _ta_wrap {
+    my ($is_mb, $text, $width, $opts) = @_;
     $width //= 80;
     $opts  //= {};
 
@@ -99,36 +101,43 @@ sub ta_mbwrap {
         #say "D:col=$col, p=$p";
         if ($p =~ /\A\s/s) {
             $is_ws++;
-            $w = 0;
-            for my $s (split /( \r?\n|\t| )/, $p) {
-                #say "D:s=[$s]";
-                if ($s eq ' ') {
-                    $w++;
-                } elsif ($s eq '\t') {
-                    # assume \t to be the same as space, for now
-                    $w++;
-                } elsif ($s eq '') {
-                } else {
-                    # newline
-                    $col = 0;
-                }
-                $p = " ";
-            }
+            $p = " ";
+            $w = 1;
         } else {
-            $w = _ta_mbswidth0($p);
+            if ($is_mb) {
+                $w = _ta_mbswidth0($p);
+            } else {
+                $w = ta_length($p);
+            }
         }
         $col += $w;
-        say "D:col=$col";
-        if ($col > $width) {
+        #say "D:col=$col";
+        if ($col > $width+1) {
+            # remove whitespace at the end of prev line
+            if (@res && $res[-1] eq ' ') {
+                pop @res;
+            }
+
             push @res, "\n";
-            say "D:3";
-            push @res, $p unless $is_ws;
-            $col = 0;
+            if ($is_ws) {
+                $col = 0;
+            } else {
+                push @res, $p;
+                $col = $w;
+            }
         } else {
-            push @res, $p;
+            push @res, $p if @p;
         }
     }
     join "", @res;
+}
+
+sub ta_wrap {
+    _ta_wrap(0, @_);
+}
+
+sub ta_mbwrap {
+    _ta_wrap(1, @_);
 }
 
 1;
@@ -136,7 +145,33 @@ sub ta_mbwrap {
 
 =head1 SYNOPSIS
 
- use Text::ANSI::Util qw(ta_detect ta_length ta_size ta_strip ta_mbwrap);
+ use Text::ANSI::Util qw(ta_detect ta_length ta_mbswidth ta_mbswidth_height
+                         ta_mbwrap ta_strip ta_wrap);
+
+ # detect whether text has ANSI escape codes?
+ say ta_detect("red");         # => false
+ say ta_detect("\x1b[31mred"); # => true
+
+ # calculate length of text (excluding the ANSI escape codes)
+ say ta_length("red");         # => 3
+ say ta_length("\x1b[31mred"); # => 3
+
+ # calculate visual width of text if printed on terminal (can handle Unicode
+ # wide characters and exclude the ANSI escape codes)
+ say ta_mbswidth("\x1b[31mred"); # => 3
+ say ta_mbswidth("\x1b[31m红色"); # => 4
+
+ # ditto, but also return the number of lines
+ say ta_mbswidth_height("\x1b[31mred\n红色"); # => [4, 2]
+
+ # strip ANSI escape codes
+ say ta_strip("\x1b[31mred"); # => "red"
+
+ # wrap text to a certain column width, handle ANSI escape codes
+ say ta_wrap("....", 40);
+
+ # ditto, but handle wide characters
+ say ta_mbwrap("....", 40);
 
 
 =head1 DESCRIPTION
@@ -201,18 +236,27 @@ ta_mbswidth_height("foobar\nb\n") >> gives [6, 3].
 
 Strip ANSI escape codes from C<$text>, returning the stripped text.
 
-=head2 ta_mbwrap($text, $width) => STR
+=head2 ta_wrap($text, $width) => STR
 
-Wrap C<$text> to C<$width> columns. It uses ta_mbswidth() instead of
-ta_length(), so it can handle wide characters better.
+Wrap C<$text> to C<$width> columns.
 
 C<$width> defaults to 80 if not specified.
 
+Note: currently performance is rather abysmal (~ 1200/s on my Core i5-2400
+3.1GHz desktop for a ~ 1KB of text), so call this routine sparingly ;-).
+
+=head2 ta_mbwrap($text, $width) => STR
+
+Like ta_wrap(), but it uses ta_mbswidth() instead of ta_length(), so it can
+handle wide characters better.
+
 Note: for text which does not have whitespaces between words, like Chinese, you
 will have to separate the words first (e.g. using L<Lingua::ZH::WordSegmenter>).
+The module also currently does not handle whitespace-like characters other than
+ASCII 32 (for example, the Chinese dot 。).
 
-Note: currently performance is quite abysmal (~ 0.01s on my Core i5 1.7GHz for a
-~ 1KB of text), so call this routine sparingly ;-).
+Note: currently performance is rather abysmal (~ 1000/s on my Core i5-2400
+3.1GHz desktop for a ~ 1KB of text), so call this routine sparingly ;-).
 
 
 =head1 TODOS
