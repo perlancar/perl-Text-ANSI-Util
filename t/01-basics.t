@@ -5,8 +5,14 @@ use strict;
 use warnings;
 use utf8;
 
+use POSIX;
 use Test::More 0.98;
 use Text::ANSI::Util qw(ta_detect ta_length ta_mbswidth ta_mbswidth_height ta_mbwrap ta_strip ta_wrap);
+
+# check if chinese locale is supported, otherwise bail
+unless (POSIX::setlocale(&POSIX::LC_ALL, "zh_CN.utf8")) {
+    plan skip_all => "Chinese locale not supported on this system";
+}
 
 subtest "ta_detect" => sub {
     ok(!ta_detect("a"), 'neg 1');
