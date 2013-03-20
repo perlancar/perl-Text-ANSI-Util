@@ -1,5 +1,11 @@
 Revision history for Text-ANSI-Util
 
+0.02    2013-03-20 (SHARYANTO)
+
+        - Fix failing CT reports by skipping tests on systems without Chinese
+          locale support.
+
+
 0.01    2013-03-13 (SHARYANTO)
 
         First release.
