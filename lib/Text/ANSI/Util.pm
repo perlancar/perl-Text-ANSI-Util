@@ -14,10 +14,15 @@ our @ISA       = qw(Exporter);
 our @EXPORT    = qw(
                        ta_detect
                        ta_length
+                       ta_mbpad
                        ta_mbswidth
                        ta_mbswidth_height
+                       ta_mbtrunc
                        ta_mbwrap
+                       ta_pad
+                       ta_split_codes
                        ta_strip
+                       ta_trunc
                        ta_wrap
                );
 
@@ -58,6 +63,15 @@ sub ta_strip {
     $text;
 }
 
+sub ta_split_codes {
+    my ($text, $mark) = @_;
+    if ($mark) {
+        return map {[$_, $re ? 1:0]} split(/((?:$re)+)/, $text);
+    } else {
+        return split(/((?:$re)+)/, $text);
+    }
+}
+
 sub ta_mbswidth_height {
     my $text = shift;
     my $num_lines = 0;
@@ -85,9 +99,8 @@ sub ta_mbswidth {
 }
 
 sub _ta_wrap {
-    my ($is_mb, $text, $width, $opts) = @_;
+    my ($is_mb, $text, $width) = @_;
     $width //= 80;
-    $opts  //= {};
 
     my @res;
     my @p = $text =~ /($re_words)/g;
@@ -140,13 +153,89 @@ sub ta_mbwrap {
     _ta_wrap(1, @_);
 }
 
+sub _ta_pad {
+    my ($is_mb, $text, $width, $which, $padchar, $is_trunc) = @_;
+    if ($which) {
+        $which = substr($which, 0, 1);
+    } else {
+        $which = "r";
+    }
+    $padchar //= " ";
+
+    # XXX is this safe? no newline inside ansi code sequence, right?
+    my @in = split /(\r?\n)/, $text;
+    my @out;
+
+    while (my ($line, $nl) = splice @in, 0, 2) {
+        my $w = $is_mb ? _ta_mbswidth0($line) : ta_length($line);
+        if ($is_trunc && $w > $width) {
+            $line = $is_mb ?
+                ta_mbtrunc($line, $width) : ta_trunc($line, $width);
+        } else {
+            if ($which eq 'l') {
+                $line = ($padchar x ($width-$w)) . $line;
+            } elsif ($which eq 'c') {
+                my $n = int(($width-$w)/2);
+                $line = ($padchar x $n) . $line . ($padchar x ($width-$w-$n));
+            } else {
+                $line .= ($padchar x ($width-$w));
+            }
+        }
+        push @out, $line;
+        push @out, $nl if defined $nl;
+    }
+    join "", @out;
+}
+
+sub ta_pad {
+    _ta_pad(0, @_);
+}
+
+sub ta_mbpad {
+    _ta_pad(1, @_);
+}
+
+sub _ta_trunc {
+    my ($is_mb, $text, $width) = @_;
+
+    my $w = $is_mb ? _ta_mbswidth0($text) : ta_length($text);
+    return $text if $w <= $width;
+    my @p = ta_split_codes($text);
+    my @res;
+    my $append = 1; # whether we should add more text
+    $w = 0;
+    while (my ($t, $ansi) = splice @p, 0, 2) {
+        if ($append) {
+            my $tw = $is_mb ? mbswidth($t) : length($t);
+            $w += $tw;
+            if ($w < $width) {
+                push @res, $t;
+            } else {
+                push @res, substr($t, 0, $tw-($w-$width));
+                $append = 0;
+            }
+        }
+        push @res, $ansi if defined($ansi);
+    }
+    join("", @res);
+}
+
+sub ta_trunc {
+    _ta_trunc(0, @_);
+}
+
+sub ta_mbtrunc {
+    _ta_trunc(1, @_);
+}
+
 1;
 # ABSTRACT: Routines for text containing ANSI escape codes
 
 =head1 SYNOPSIS
 
- use Text::ANSI::Util qw(ta_detect ta_length ta_mbswidth ta_mbswidth_height
-                         ta_mbwrap ta_strip ta_wrap);
+ use Text::ANSI::Util qw(
+     ta_detect ta_length ta_mbpad ta_mbswidth ta_mbswidth_height ta_mbwrap
+     ta_pad ta_strip ta_wrap);
 
  # detect whether text has ANSI escape codes?
  say ta_detect("red");         # => false
@@ -167,11 +256,30 @@ sub ta_mbwrap {
  # strip ANSI escape codes
  say ta_strip("\x1b[31mred"); # => "red"
 
+ # split codes (ANSI codes are always on the even positions)
+ my @parts = ta_split_codes("\x1b[31mred"); # => ("", "\x1b[31m", "red")
+
  # wrap text to a certain column width, handle ANSI escape codes
  say ta_wrap("....", 40);
 
  # ditto, but handle wide characters
- say ta_mbwrap("....", 40);
+ say ta_mbwrap(...);
+
+ # pad (left, right, center) text to a certain width, handles multiple lines
+ say ta_pad("foo", 10);                          # => "foo       "
+ say ta_pad("foo", 10, "left");                  # => "       foo"
+ say ta_pad("foo\nbarbaz\n", 10, "center", "."); # => "...foo....\n..barbaz..\n"
+
+ # ditto, but handle wide characters
+ say ta_mbpad(...);
+
+ # truncate text to a certain width while still passing ANSI escape codes
+ use Term::ANSIColor;
+ my $text = color("red")."red text".color("reset"); # => "\e[31mred text\e[0m"
+ say ta_trunc($text, 5);           # => "\e[31mred t\e[0m"
+
+ # ditto, but handle wide characters
+ say ta_mbtrunc(...);
 
 
 =head1 DESCRIPTION
@@ -185,15 +293,15 @@ Current caveats:
 
 =item * All codes are assumed to have zero width
 
-This is not true. Color codes are indeed zero width, but there are also codes to
-alter cursor positions which means it can have negative or undefined width.
+This is true for color codes and some other codes, but there are also codes to
+alter cursor positions which means they can have negative or undefined width.
 
 =item * Single-character CSI (control sequence introducer) currently ignored
 
 Only C<ESC+[> (two-character CSI) is currently parsed.
 
-In ASCII terminals, single-character CSI is C<0x9b>. In UTF-8 terminals, it is
-C<0xc2, 0x9b> (2 bytes).
+BTW, in ASCII terminals, single-character CSI is C<0x9b>. In UTF-8 terminals, it
+is C<0xc2, 0x9b> (2 bytes).
 
 =item * Private-mode- and trailing-intermediate character currently not parsed
 
@@ -236,6 +344,26 @@ ta_mbswidth_height("foobar\nb\n") >> gives [6, 3].
 
 Strip ANSI escape codes from C<$text>, returning the stripped text.
 
+=head2 ta_split_codes($text) => LIST
+
+Split C<$text> to a list containing alternating ANSI escape codes and text. ANSI
+escape codes are always on the second element, fourth, and so on. Example:
+
+ ta_split_codes("");              # => ()
+ ta_split_codes("a");             # => ("a")
+ ta_split_codes("a\e[31m");       # => ("a", "\e[31m")
+ ta_split_codes("\e[31ma");       # => ("", "\e[31m", "a")
+ ta_split_codes("\e[31ma\e[0m");  # => ("", "\e[31m", "a", "\e[0m")
+ ta_split_codes("\e[31ma\e[0mb"); # => ("", "\e[31m", "a", "\e[0m", "b")
+ ta_split_codes("\e[31m\e[0mb");  # => ("", "\e[31m\e[0m", "b")
+
+so you can do something like:
+
+ my @parts = ta_split_codes($text);
+ while (my ($text, $ansicode) = splice(@parts, 0, 2)) {
+     ...
+ }
+
 =head2 ta_wrap($text, $width) => STR
 
 Wrap C<$text> to C<$width> columns.
@@ -248,7 +376,7 @@ Note: currently performance is rather abysmal (~ 1200/s on my Core i5-2400
 =head2 ta_mbwrap($text, $width) => STR
 
 Like ta_wrap(), but it uses ta_mbswidth() instead of ta_length(), so it can
-handle wide characters better.
+handle wide characters.
 
 Note: for text which does not have whitespaces between words, like Chinese, you
 will have to separate the words first (e.g. using L<Lingua::ZH::WordSegmenter>).
@@ -258,8 +386,39 @@ ASCII 32 (for example, the Chinese dot 。).
 Note: currently performance is rather abysmal (~ 1000/s on my Core i5-2400
 3.1GHz desktop for a ~ 1KB of text), so call this routine sparingly ;-).
 
+=head2 ta_pad($text, $width[, $which[, $padchar[, $truncate]]]) => STR
+
+Return C<$text> padded with C<$padchar> to C<$width> columns. C<$which> is
+either "r" or "right" for padding on the right (the default if not specified),
+"l" or "left" for padding on the right, or "c" or "center" or "centre" for
+left+right padding to center the text.
+
+C<$padchar> is whitespace if not specified. It should be string having the width
+of 1 column.
+
+=head2 ta_mbpad => STR
+
+Like ta_pad() but it uses ta_mbswidth() instead of ta_length(), so it can handle
+wide characters.
+
+=head2 ta_trunc($text, $width) => STR
+
+Truncate C<$text> to C<$width> columns while still including all the ANSI escape
+codes. This ensures that truncated text still reset colors, etc.
+
+Does *not* handle multiple lines.
+
+=head2 ta_mbtrunc($text, $width) => STR
+
+Like ta_trunc() but it uses ta_mbswidth() instead of ta_length(), so it can
+handle wide characters.
+
 
 =head1 TODOS
+
+=over
+
+=back
 
 
 =head1 SEE ALSO
