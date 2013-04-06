@@ -1,5 +1,12 @@
 Revision history for Text-ANSI-Util
 
+0.03    2013-04-06 (SHARYANTO)
+
+        [ENHANCEMENTS]
+
+        - Add functions: ta_split_codes, ta_{,mb}trunc, ta_{,mb}pad.
+
+
 0.02    2013-03-20 (SHARYANTO)
 
         - Fix failing CT reports by skipping tests on systems without Chinese
