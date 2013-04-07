@@ -11,7 +11,7 @@ use Text::ANSI::Util qw(
                            ta_detect ta_length ta_mbpad ta_mbswidth
                            ta_mbswidth_height ta_mbtrunc ta_mbwrap ta_pad
                            ta_split_codes ta_strip ta_trunc ta_wrap);
-
+use constant NL => "\n";
 # check if chinese locale is supported, otherwise bail
 unless (POSIX::setlocale(&POSIX::LC_ALL, "zh_CN.utf8")) {
     plan skip_all => "Chinese locale not supported on this system";
@@ -67,12 +67,12 @@ my $txt1 = <<_;
 \x1b[31;47mI\x1b[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
 I'm fine. You don't have to keep me company.
 _
-# --------10--------20--------30--------40--------50
+#qq--------10--------20--------30--------40--------50
 my $txt1w =
-qq(\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you\n).
-qq(want to go? I'll keep you company. Mr\n).
-qq(Goh, I'm fine. You don't have to keep me\n).
-qq(company.);
+qq|\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you|.NL.
+qq|want to go? I'll keep you company. Mr|.NL.
+qq|Goh, I'm fine. You don't have to keep me|.NL.
+qq|company.|;
 subtest "ta_wrap" => sub {
     is(ta_wrap($txt1, 40), $txt1w);
 };
@@ -82,13 +82,13 @@ my $txt2 = <<_;
 company. 那你想去哪里？我陪你. Mr Goh, I'm fine. 吴先生. 我没事. You don't have
 to keep me company. 你不用陪我.
 _
-# --------10--------20--------30--------40--------50
+#qq--------10--------20--------30--------40--------50
 my $txt2w =
-qq(\x1b[31;47mI\x1b[0m dont wan't to go home. 我不想回家.\n).
-qq(Where do you want to go? I'll keep you\n).
-qq(company. 那你想去哪里？我陪你. Mr Goh,\n).
-qq(I'm fine. 吴先生. 我没事. You don't have\n).
-qq(to keep me company. 你不用陪我.);
+qq|\x1b[31;47mI\x1b[0m dont wan't to go home. 我不想回家.|.NL.
+qq|Where do you want to go? I'll keep you|.NL.
+qq|company. 那你想去哪里？我陪你. Mr Goh,|.NL.
+qq|I'm fine. 吴先生. 我没事. You don't have|.NL.
+qq|to keep me company. 你不用陪我.|;
 subtest "ta_mbwrap" => sub {
     is(ta_mbwrap($txt2, 40), $txt2w);
 };
