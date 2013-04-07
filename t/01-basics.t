@@ -4,6 +4,7 @@ use 5.010001;
 use strict;
 use warnings;
 use utf8;
+use constant NL => "\n";
 
 use POSIX;
 use Test::More 0.98;
@@ -11,7 +12,7 @@ use Text::ANSI::Util qw(
                            ta_detect ta_length ta_mbpad ta_mbswidth
                            ta_mbswidth_height ta_mbtrunc ta_mbwrap ta_pad
                            ta_split_codes ta_strip ta_trunc ta_wrap);
-use constant NL => "\n";
+
 # check if chinese locale is supported, otherwise bail
 unless (POSIX::setlocale(&POSIX::LC_ALL, "zh_CN.utf8")) {
     plan skip_all => "Chinese locale not supported on this system";
