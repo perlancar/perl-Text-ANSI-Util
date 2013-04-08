@@ -64,6 +64,7 @@ subtest "ta_mbswidth" => sub {
     is_deeply(ta_mbswidth("\x1b[31;47m你好吗\x1b[0m\nhello\n"), 6);
 };
 
+# single paragraph
 my $txt1 = <<_;
 \x1b[31;47mI\x1b[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
 I'm fine. You don't have to keep me company.
@@ -73,13 +74,9 @@ my $txt1w =
 qq|\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you|.NL.
 qq|want to go? I'll keep you company. Mr|.NL.
 qq|Goh, I'm fine. You don't have to keep me|.NL.
-qq|company.|;
-subtest "ta_wrap" => sub {
-    is(ta_wrap($txt1, 40), $txt1w);
-};
+qq|company.|.NL;
 
 # multiple paragraph
-
 my $txt1b = <<_;
 \x1b[31;47mI\x1b[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
 I'm fine. You don't have to keep me company.
@@ -96,11 +93,21 @@ qq|company.|.NL.NL.
 qq|\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you|.NL.
 qq|want to go? I'll keep you company. Mr|.NL.
 qq|Goh, I'm fine. You don't have to keep me|.NL.
-qq|company.|;
+qq|company.|.NL;
+
+# no terminating newline
+my $txt1c = "\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
+I'm fine. You don't have to keep...";
+#qq--------10--------20--------30--------40--------50
+my $txt1cw =
+qq|\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you|.NL.
+qq|want to go? I'll keep you company. Mr|.NL.
+qq|Goh, I'm fine. You don't have to keep...|;
 
 subtest "ta_wrap" => sub {
     is(ta_wrap($txt1 , 40), $txt1w );
     is(ta_wrap($txt1b, 40), $txt1bw);
+    is(ta_wrap($txt1c, 40), $txt1cw);
 };
 
 my $txt2 = <<_;
@@ -114,7 +121,7 @@ qq|\x1b[31;47mI\x1b[0m dont wan't to go home. 我不想回家.|.NL.
 qq|Where do you want to go? I'll keep you|.NL.
 qq|company. 那你想去哪里？我陪你. Mr Goh,|.NL.
 qq|I'm fine. 吴先生. 我没事. You don't have|.NL.
-qq|to keep me company. 你不用陪我.|;
+qq|to keep me company. 你不用陪我.|.NL;
 subtest "ta_mbwrap" => sub {
     is(ta_mbwrap($txt2, 40), $txt2w);
 };

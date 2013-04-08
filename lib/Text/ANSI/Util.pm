@@ -132,13 +132,13 @@ sub _ta_wrap {
             }
         }
         $col += $w;
-        #say "D:col=$col, is_pb=$is_pb, is_ws=$is_ws, num_nl=$num_nl";
+        #say "D:col=$col, is_pb=${\($is_pb//0)}, is_ws=${\($is_ws//0)}, num_nl=$num_nl";
 
         if ($is_pb) {
             push @res, "\n" x $num_nl;
             $col = 0;
         } elsif ($col > $width+1) {
-            # remove whitespace at the end of prev line
+            # remove space at the end of prev line
             if (@res && $res[-1] eq ' ') {
                 pop @res;
             }
@@ -151,7 +151,14 @@ sub _ta_wrap {
                 $col = $w;
             }
         } else {
-            push @res, $p if @p;
+            # remove space at the end of text
+            if (@p || !$is_ws) {
+                push @res, $p;
+            } else {
+                if ($num_nl == 1) {
+                    push @res, "\n";
+                }
+            }
         }
     }
     join "", @res;
