@@ -414,6 +414,14 @@ Like ta_trunc() but it uses ta_mbswidth() instead of ta_length(), so it can
 handle wide characters.
 
 
+=head1 FAQ
+
+=head2 How do I truncate string based on number of characters?
+
+You can simply use Perl's ta_trunc() even on text containing wide characters.
+ta_trunc() uses Perl's length() which works on a per-character basis.
+
+
 =head1 TODOS
 
 =over
