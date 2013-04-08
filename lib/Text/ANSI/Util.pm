@@ -11,7 +11,7 @@ use Text::CharWidth qw(mbswidth);
 
 require Exporter;
 our @ISA       = qw(Exporter);
-our @EXPORT    = qw(
+our @EXPORT_OK = qw(
                        ta_detect
                        ta_length
                        ta_mbpad
