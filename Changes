@@ -1,5 +1,13 @@
 Revision history for Text-ANSI-Util
 
+0.04    2013-04-08 (SHARYANTO)
+
+        [BUG FIXES]
+
+        - ta_{,mb}wrap(): Handles multiple paragraph, fix bug where last word of
+          text is sometimes removed, do not remove terminating newline.
+
+
 0.03    2013-04-06 (SHARYANTO)
 
         [ENHANCEMENTS]
