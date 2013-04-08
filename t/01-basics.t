@@ -78,6 +78,31 @@ subtest "ta_wrap" => sub {
     is(ta_wrap($txt1, 40), $txt1w);
 };
 
+# multiple paragraph
+
+my $txt1b = <<_;
+\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
+I'm fine. You don't have to keep me company.
+
+\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
+I'm fine. You don't have to keep me company.
+_
+#qq--------10--------20--------30--------40--------50
+my $txt1bw =
+qq|\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you|.NL.
+qq|want to go? I'll keep you company. Mr|.NL.
+qq|Goh, I'm fine. You don't have to keep me|.NL.
+qq|company.|.NL.NL.
+qq|\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you|.NL.
+qq|want to go? I'll keep you company. Mr|.NL.
+qq|Goh, I'm fine. You don't have to keep me|.NL.
+qq|company.|;
+
+subtest "ta_wrap" => sub {
+    is(ta_wrap($txt1 , 40), $txt1w );
+    is(ta_wrap($txt1b, 40), $txt1bw);
+};
+
 my $txt2 = <<_;
 \x1b[31;47mI\x1b[0m dont wan't to go home. 我不想回家. Where do you want to go? I'll keep you
 company. 那你想去哪里？我陪你. Mr Goh, I'm fine. 吴先生. 我没事. You don't have

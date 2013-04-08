@@ -109,13 +109,21 @@ sub _ta_wrap {
     my $i = 0;
     while (my $p = shift(@p)) {
         $i++;
+        my $num_nl = 0;
+        my $is_pb; # paragraph break
         my $is_ws;
         my $w;
-        #say "D:col=$col, p=$p";
+        #say "D:col=$col, p=[$p]";
         if ($p =~ /\A\s/s) {
             $is_ws++;
-            $p = " ";
-            $w = 1;
+            $num_nl++ while $p =~ s/\r?\n//;
+            if ($num_nl >= 2) {
+                $is_pb++;
+                $w = 0;
+            } else {
+                $p = " ";
+                $w = 1;
+            }
         } else {
             if ($is_mb) {
                 $w = _ta_mbswidth0($p);
@@ -124,8 +132,12 @@ sub _ta_wrap {
             }
         }
         $col += $w;
-        #say "D:col=$col";
-        if ($col > $width+1) {
+        #say "D:col=$col, is_pb=$is_pb, is_ws=$is_ws, num_nl=$num_nl";
+
+        if ($is_pb) {
+            push @res, "\n" x $num_nl;
+            $col = 0;
+        } elsif ($col > $width+1) {
             # remove whitespace at the end of prev line
             if (@res && $res[-1] eq ' ') {
                 pop @res;
