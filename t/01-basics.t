@@ -1,4 +1,4 @@
-#!perl -T
+#!perl
 
 use 5.010001;
 use strict;
@@ -140,13 +140,13 @@ subtest "ta_mbtrunc" => sub {
     my $t = "\x1b[31m不\x1b[32m用\x1b[33m陪\x1b[0m我";
     is(ta_mbtrunc($t, 9), $t);
     is(ta_mbtrunc($t, 8), $t);
-    is(ta_mbtrunc($t, 7), "\x1b[31m不\x1b[32m用\x1b[33m陪\x1b[0m我"); # well, ...
+    is(ta_mbtrunc($t, 7), "\x1b[31m不\x1b[32m用\x1b[33m陪\x1b[0m");
     is(ta_mbtrunc($t, 6), "\x1b[31m不\x1b[32m用\x1b[33m陪\x1b[0m");
-    is(ta_mbtrunc($t, 5), "\x1b[31m不\x1b[32m用\x1b[33m陪\x1b[0m"); # well, ...
+    is(ta_mbtrunc($t, 5), "\x1b[31m不\x1b[32m用\x1b[33m\x1b[0m");
     is(ta_mbtrunc($t, 4), "\x1b[31m不\x1b[32m用\x1b[33m\x1b[0m");
-    is(ta_mbtrunc($t, 3), "\x1b[31m不\x1b[32m用\x1b[33m\x1b[0m"); # well, ...
+    is(ta_mbtrunc($t, 3), "\x1b[31m不\x1b[32m\x1b[33m\x1b[0m");
     is(ta_mbtrunc($t, 2), "\x1b[31m不\x1b[32m\x1b[33m\x1b[0m");
-    is(ta_mbtrunc($t, 1), "\x1b[31m不\x1b[32m\x1b[33m\x1b[0m"); # well, ...
+    is(ta_mbtrunc($t, 1), "\x1b[31m\x1b[32m\x1b[33m\x1b[0m");
     is(ta_mbtrunc($t, 0), "\x1b[31m\x1b[32m\x1b[33m\x1b[0m");
 };
 
@@ -170,6 +170,8 @@ subtest "ta_mbpad" => sub {
     is(ta_mbpad("$foo", 10, "r", "x"), "${foo}xxxx");
     is(ta_mbpad("${foo}12345678", 10), "${foo}12345678");
     is(ta_mbpad("${foo}12345678", 10, undef, undef, 1), "${foo}1234");
+    is(ta_mbpad("$foo", 3, undef, undef, 1), "\x1b[31;47m你\x1b[0m ",
+       "repad truncated");
 };
 
 DONE_TESTING:

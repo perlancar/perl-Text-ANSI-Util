@@ -8,6 +8,7 @@ use warnings;
 
 use List::Util qw(max);
 use Text::CharWidth qw(mbswidth);
+use Text::WideChar::Util qw(mbtrunc);
 
 require Exporter;
 our @ISA       = qw(Exporter);
@@ -183,7 +184,9 @@ sub _ta_pad {
 
     my $w = $is_mb ? _ta_mbswidth0($text) : ta_length($text);
     if ($is_trunc && $w > $width) {
-        $text = $is_mb ? ta_mbtrunc($text, $width) : ta_trunc($text, $width);
+        my $res = $is_mb ?
+            ta_mbtrunc($text, $width, 1) : ta_trunc($text, $width, 1);
+        $text = $res->[0] . ($padchar x ($width-$res->[1]));
     } else {
         if ($which eq 'l') {
             $text = ($padchar x ($width-$w)) . $text;
@@ -206,7 +209,7 @@ sub ta_mbpad {
 }
 
 sub _ta_trunc {
-    my ($is_mb, $text, $width) = @_;
+    my ($is_mb, $text, $width, $return_width) = @_;
 
     my $w = $is_mb ? _ta_mbswidth0($text) : ta_length($text);
     return $text if $w <= $width;
@@ -217,17 +220,27 @@ sub _ta_trunc {
     while (my ($t, $ansi) = splice @p, 0, 2) {
         if ($append) {
             my $tw = $is_mb ? mbswidth($t) : length($t);
-            $w += $tw;
-            if ($w < $width) {
+            if ($w+$tw <= $width) {
                 push @res, $t;
+                $w += $tw;
+                $append = 0 if $w == $width;
             } else {
-                push @res, substr($t, 0, $tw-($w-$width));
+                my $tres = $is_mb ?
+                    mbtrunc($t, $width-$w, 1) :
+                        [substr($t, 0, $width-$w), $width-$w];
+                push @res, $tres->[0];
+                $w += $tres->[1];
                 $append = 0;
             }
         }
         push @res, $ansi if defined($ansi);
     }
-    join("", @res);
+
+    if ($return_width) {
+        return [join("", @res), $w];
+    } else {
+        return join("", @res);
+    }
 }
 
 sub ta_trunc {
