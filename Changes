@@ -1,5 +1,17 @@
 Revision history for Text-ANSI-Util
 
+0.06    2013-04-09 (SHARYANTO)
+
+        [BUG FIXES]
+
+        - ta_mbtrunc(): Use mbtrunc() which is the proper method, instead of
+          substr().
+
+        - ta_mbpad(): Since ta_mbtrunc() might generate text with width of
+          ($width-1) or less, depending on the width of the truncated wide
+          character, we need to pad the truncated text to go to $width.
+
+
 0.05    2013-04-09 (SHARYANTO)
 
         [INCOMPATIBLE CHANGES]
