@@ -1,5 +1,15 @@
 Revision history for Text-ANSI-Util
 
+0.05    2013-04-09 (SHARYANTO)
+
+        [INCOMPATIBLE CHANGES]
+
+        - ta_{,mb}pad() now does not handle multiline text (the implementation
+          was incorrect after all, "" should've been padded to "xxx" and "a\n"
+          should've been padded to "axx\nxxx"). You can now split multiline text
+          by yourself as you see fit.
+
+
 0.04    2013-04-08 (SHARYANTO)
 
         [BUG FIXES]
