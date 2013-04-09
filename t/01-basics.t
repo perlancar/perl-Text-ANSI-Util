@@ -152,6 +152,7 @@ subtest "ta_mbtrunc" => sub {
 
 subtest "ta_pad" => sub {
     my $foo = "\x1b[31;47mfoo\x1b[0m";
+    is(ta_pad(""    , 10), "          ", "empty");
     is(ta_pad("$foo", 10), "$foo       ");
     is(ta_pad("$foo", 10, "l"), "       $foo");
     is(ta_pad("$foo", 10, "c"), "   $foo    ");
@@ -162,6 +163,7 @@ subtest "ta_pad" => sub {
 
 subtest "ta_mbpad" => sub {
     my $foo = "\x1b[31;47m你好吗\x1b[0m";
+    is(ta_mbpad(""    , 10), "          ", "empty");
     is(ta_mbpad("$foo", 10), "$foo    ");
     is(ta_mbpad("$foo", 10, "l"), "    $foo");
     is(ta_mbpad("$foo", 10, "c"), "  $foo  ");
