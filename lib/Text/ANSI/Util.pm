@@ -262,29 +262,25 @@ sub _ta_highlight {
     # codes (m commands) from the last reset/normal (\e[0m). then after we
     # insert the highlight, we reinsert the saved up codes.
 
+    # break into chunks
     my @p = ta_split_codes_single($text);
-    my (@t, @c, @sc, @pos); # texts, codes, saved codes, positions of text
+    my (@t, @c, @sc); # texts, codes, saved codes
     my $sc = "";
     my $plaintext = "";
-    {
-        my $pos = 0;
-        while (my ($t, $c) = splice(@p, 0, 2)) {
-            push @t, $t;
-            push @c, $c;
-            push @sc, $sc;
-            push @pos, $pos;
-            $plaintext .= $t;
-            $pos += length($t);
-            if (defined($c) && $c =~ /m\z/) {
-                if ($c eq "\e[0m") {
-                    $sc = "";
-                } else {
-                    $sc .= $c;
-                }
+    while (my ($t, $c) = splice(@p, 0, 2)) {
+        push @t, $t;
+        push @c, $c;
+        push @sc, $sc;
+        $plaintext .= $t;
+        if (defined($c) && $c =~ /m\z/) {
+            if ($c eq "\e[0m") {
+                $sc = "";
+            } else {
+                $sc .= $c;
             }
         }
-        #use Data::Dump; print "\@t: "; dd \@t; print "\@c: "; dd \@c; print "\@sc: "; dd \@sc; print "\@pos: "; dd \@pos;
     }
+    #use Data::Dump; print "\@t: "; dd \@t; print "\@c: "; dd \@c; print "\@sc: "; dd \@sc;
 
     if ($ci) {
         $text = lc($text);
@@ -295,23 +291,28 @@ sub _ta_highlight {
 
     my @res;
     my $found = 1;
-    for my $i (0..$#pos) {
-        my $pos   = $pos[$i];
+    my $pos = 0;
+    my $i = 0;
+  CHUNK:
+    while (1) {
+        last if $i >= @t;
         my $pos2  = $pos+length($t[$i])-1;
         my $npos2 = $npos+length($needle)-1;
         #say "D: npos=$npos, npos2=$npos2, pos=$pos, pos2=$pos2";
         if ($pos > $npos2 || $pos2 < $npos || !$found) {
+            #say "D:inserting chunk: [$t[$i]]";
             # no need to highlight
-            push @res, $t[$i], $c[$i];
-            next;
+            push @res, $t[$i];
+            push @res, $c[$i] if defined $c[$i];
+            goto L1;
         }
 
+        # there is chunk text at the left of needle?
         if ($pos < $npos) {
             my $pre = substr($t[$i], 0, $npos-$pos);
             #say "D:inserting pre=[$pre]";
             push @res, $pre;
         }
-
 
         my $npart = substr($needle,
                            max(0, $pos-$npos),
@@ -324,26 +325,43 @@ sub _ta_highlight {
             push @res, $sc[$i];
         }
 
-        if ($npos2 < $pos2) {
+        # there is chunk text at the right of needle?
+        if ($npos2 <= $pos2) {
+            #say "D:We have run past needle";
             my $post = substr($t[$i], $npos2-$pos+1);
-            #say "D:inserting post=[$post]";
-            push @res, $post;
-        }
-        push @res, $c[$i] if defined $c[$i];
 
-        # ready to find next occurence?
-        if ($pos2 >= $npos2 && $is_all) {
-            $npos = index($plaintext, $needle, $npos2+1);
-            if ($npos >= 0) {
-                $found++;
-                $npos2 = $npos + length($needle)-1;
+            # ready to find next occurence?
+            if ($is_all) {
+                #say "D:Finding another needle ($needle) from pos ", ($npos2+1);
+                my $new_npos = index($plaintext, $needle, $npos2+1);
+                if ($new_npos >= 0) {
+                    $found++;
+                    $pos   = $npos2+1;
+                    $npos2 = $new_npos + length($needle)-1;
+                    #say "D:Replacing chunk for new needle search: [$post]";
+                    $t[$i] = $post;
+                    $npos = $new_npos;
+                    redo CHUNK;
+                } else {
+                    $found = 0;
+                }
             } else {
                 $found = 0;
             }
+
+            if (!$found) {
+                #say "D:inserting post=[$post]";
+                push @res, $post;
+                push @res, $c[$i] if defined $c[$i];
+            }
         }
+
+      L1:
+        $pos = $pos2+1;
+        $i++;
     }
 
-    join "", grep {defined} @res;
+    join "", @res;
 }
 
 sub ta_highlight {
@@ -360,8 +378,9 @@ sub ta_highlight_all {
 =head1 SYNOPSIS
 
  use Text::ANSI::Util qw(
-     ta_detect ta_length ta_mbpad ta_mbswidth ta_mbswidth_height ta_mbwrap
-     ta_pad ta_strip ta_wrap);
+     ta_detect ta_highlight ta_highlight_all ta_length ta_mbpad ta_mbswidth
+     ta_mbswidth_height ta_mbwrap ta_pad ta_split_codes ta_split_codes_single
+     ta_strip ta_wrap);
 
  # detect whether text has ANSI escape codes?
  say ta_detect("red");         # => false

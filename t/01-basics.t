@@ -11,7 +11,9 @@ use Test::More 0.98;
 use Text::ANSI::Util qw(
                            ta_detect ta_length ta_mbpad ta_mbswidth
                            ta_mbswidth_height ta_mbtrunc ta_mbwrap ta_pad
-                           ta_split_codes ta_strip ta_trunc ta_wrap);
+                           ta_split_codes ta_split_codes_single
+                           ta_strip ta_trunc ta_wrap ta_highlight
+                           ta_highlight_all);
 
 # check if chinese locale is supported, otherwise bail
 unless (POSIX::setlocale(&POSIX::LC_ALL, "zh_CN.utf8")) {
@@ -39,6 +41,10 @@ subtest "ta_split_codes" => sub {
     is_deeply([ta_split_codes("\e[31ma\e[0m")], ["", "\e[31m", "a", "\e[0m"]);
     is_deeply([ta_split_codes("\e[31ma\e[0mb")], ["", "\e[31m", "a", "\e[0m", "b"]);
     is_deeply([ta_split_codes("\e[31m\e[0mb")], ["", "\e[31m\e[0m", "b"]);
+};
+
+subtest "ta_split_codes_single" => sub {
+    is_deeply([ta_split_codes_single("\e[31m\e[0mb")], ["", "\e[31m", "", "\e[0m", "b"]);
 };
 
 subtest "ta_length" => sub {
@@ -172,6 +178,16 @@ subtest "ta_mbpad" => sub {
     is(ta_mbpad("${foo}12345678", 10, undef, undef, 1), "${foo}1234");
     is(ta_mbpad("$foo", 3, undef, undef, 1), "\e[31;47m你\e[0m ",
        "repad truncated");
+};
+
+subtest "ta_highlight" => sub {
+    is(ta_highlight("\e[1m\e[31m12345\e[32m64567\e[0m", "456", "\e[7m"),
+       "\e[1m\e[31m123\e[7m45\e[0m\e[1m\e[31m\e[7m6\e[0m\e[1m\e[31m\e[32m4567\e[0m");
+};
+
+subtest "ta_highlight_all" => sub {
+    is(ta_highlight_all("\e[1m\e[31m12345\e[32m674567\e[0m", "456", "\e[7m"),
+       "\e[1m\e[31m123\e[7m45\e[0m\e[1m\e[31m\e[7m6\e[0m\e[1m\e[31m\e[32m7\e[7m456\e[0m\e[1m\e[31m\e[32m7\e[0m");
 };
 
 DONE_TESTING:
