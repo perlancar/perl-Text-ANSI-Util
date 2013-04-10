@@ -65,12 +65,8 @@ sub ta_strip {
 }
 
 sub ta_split_codes {
-    my ($text, $mark) = @_;
-    if ($mark) {
-        return map {[$_, $re ? 1:0]} split(/((?:$re)+)/, $text);
-    } else {
-        return split(/((?:$re)+)/, $text);
-    }
+    my $text = shift;
+    return split(/((?:$re)+)/, $text);
 }
 
 sub ta_mbswidth_height {
