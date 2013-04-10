@@ -20,15 +20,15 @@ unless (POSIX::setlocale(&POSIX::LC_ALL, "zh_CN.utf8")) {
 
 subtest "ta_detect" => sub {
     ok(!ta_detect("a"), 'neg 1');
-    ok(!ta_detect("\x1b"), 'neg 2');
-    ok( ta_detect("\x1b[0m"), 'pos 1');
-    ok( ta_detect("\x1b[31;47mhello\x1b[0m"), 'pos 2');
+    ok(!ta_detect("\e"), 'neg 2');
+    ok( ta_detect("\e[0m"), 'pos 1');
+    ok( ta_detect("\e[31;47mhello\e[0m"), 'pos 2');
 };
 
 subtest "ta_strip" => sub {
     is(ta_strip(""), "");
     is(ta_strip("hello"), "hello");
-    is(ta_strip("\x1b[31;47mhello\x1b[0m"), "hello");
+    is(ta_strip("\e[31;47mhello\e[0m"), "hello");
 };
 
 subtest "ta_split_codes" => sub {
@@ -44,63 +44,63 @@ subtest "ta_split_codes" => sub {
 subtest "ta_length" => sub {
     is(ta_length(""), 0);
     is(ta_length("hello"), 5);
-    is(ta_length("\x1b[0m"), 0);
-    is(ta_length("\x1b[31;47mhello\x1b[0m"), 5);
+    is(ta_length("\e[0m"), 0);
+    is(ta_length("\e[31;47mhello\e[0m"), 5);
 };
 
 subtest "ta_mbswidth_height" => sub {
     is_deeply(ta_mbswidth_height(""), [0, 0]);
-    is_deeply(ta_mbswidth_height("\x1b[0m"), [0, 0]);
+    is_deeply(ta_mbswidth_height("\e[0m"), [0, 0]);
     is_deeply(ta_mbswidth_height(" "), [1, 1]);
     is_deeply(ta_mbswidth_height(" \n"), [1, 2]);
-    is_deeply(ta_mbswidth_height("\x1b[31;47m你好吗\x1b[0m\nhello\n"), [6, 3]);
+    is_deeply(ta_mbswidth_height("\e[31;47m你好吗\e[0m\nhello\n"), [6, 3]);
 };
 
 subtest "ta_mbswidth" => sub {
     is_deeply(ta_mbswidth(""), 0);
-    is_deeply(ta_mbswidth("\x1b[0m"), 0);
+    is_deeply(ta_mbswidth("\e[0m"), 0);
     is_deeply(ta_mbswidth(" "), 1);
     is_deeply(ta_mbswidth(" \n"), 1);
-    is_deeply(ta_mbswidth("\x1b[31;47m你好吗\x1b[0m\nhello\n"), 6);
+    is_deeply(ta_mbswidth("\e[31;47m你好吗\e[0m\nhello\n"), 6);
 };
 
 # single paragraph
 my $txt1 = <<_;
-\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
+\e[31;47mI\e[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
 I'm fine. You don't have to keep me company.
 _
 #qq--------10--------20--------30--------40--------50
 my $txt1w =
-qq|\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you|.NL.
+qq|\e[31;47mI\e[0m dont wan't to go home. Where do you|.NL.
 qq|want to go? I'll keep you company. Mr|.NL.
 qq|Goh, I'm fine. You don't have to keep me|.NL.
 qq|company.|.NL;
 
 # multiple paragraph
 my $txt1b = <<_;
-\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
+\e[31;47mI\e[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
 I'm fine. You don't have to keep me company.
 
-\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
+\e[31;47mI\e[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
 I'm fine. You don't have to keep me company.
 _
 #qq--------10--------20--------30--------40--------50
 my $txt1bw =
-qq|\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you|.NL.
+qq|\e[31;47mI\e[0m dont wan't to go home. Where do you|.NL.
 qq|want to go? I'll keep you company. Mr|.NL.
 qq|Goh, I'm fine. You don't have to keep me|.NL.
 qq|company.|.NL.NL.
-qq|\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you|.NL.
+qq|\e[31;47mI\e[0m dont wan't to go home. Where do you|.NL.
 qq|want to go? I'll keep you company. Mr|.NL.
 qq|Goh, I'm fine. You don't have to keep me|.NL.
 qq|company.|.NL;
 
 # no terminating newline
-my $txt1c = "\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
+my $txt1c = "\e[31;47mI\e[0m dont wan't to go home. Where do you want to go? I'll keep you company. Mr Goh,
 I'm fine. You don't have to keep...";
 #qq--------10--------20--------30--------40--------50
 my $txt1cw =
-qq|\x1b[31;47mI\x1b[0m dont wan't to go home. Where do you|.NL.
+qq|\e[31;47mI\e[0m dont wan't to go home. Where do you|.NL.
 qq|want to go? I'll keep you company. Mr|.NL.
 qq|Goh, I'm fine. You don't have to keep...|;
 
@@ -111,13 +111,13 @@ subtest "ta_wrap" => sub {
 };
 
 my $txt2 = <<_;
-\x1b[31;47mI\x1b[0m dont wan't to go home. 我不想回家. Where do you want to go? I'll keep you
+\e[31;47mI\e[0m dont wan't to go home. 我不想回家. Where do you want to go? I'll keep you
 company. 那你想去哪里？我陪你. Mr Goh, I'm fine. 吴先生. 我没事. You don't have
 to keep me company. 你不用陪我.
 _
 #qq--------10--------20--------30--------40--------50
 my $txt2w =
-qq|\x1b[31;47mI\x1b[0m dont wan't to go home. 我不想回家.|.NL.
+qq|\e[31;47mI\e[0m dont wan't to go home. 我不想回家.|.NL.
 qq|Where do you want to go? I'll keep you|.NL.
 qq|company. 那你想去哪里？我陪你. Mr Goh,|.NL.
 qq|I'm fine. 吴先生. 我没事. You don't have|.NL.
@@ -127,31 +127,31 @@ subtest "ta_mbwrap" => sub {
 };
 
 subtest "ta_trunc" => sub {
-    my $t = "\x1b[31m1\x1b[32m2\x1b[33m3\x1b[0m4";
+    my $t = "\e[31m1\e[32m2\e[33m3\e[0m4";
     is(ta_trunc($t, 5), $t);
     is(ta_trunc($t, 4), $t);
-    is(ta_trunc($t, 3), "\x1b[31m1\x1b[32m2\x1b[33m3\x1b[0m");
-    is(ta_trunc($t, 2), "\x1b[31m1\x1b[32m2\x1b[33m\x1b[0m");
-    is(ta_trunc($t, 1), "\x1b[31m1\x1b[32m\x1b[33m\x1b[0m");
-    is(ta_trunc($t, 0), "\x1b[31m\x1b[32m\x1b[33m\x1b[0m");
+    is(ta_trunc($t, 3), "\e[31m1\e[32m2\e[33m3\e[0m");
+    is(ta_trunc($t, 2), "\e[31m1\e[32m2\e[33m\e[0m");
+    is(ta_trunc($t, 1), "\e[31m1\e[32m\e[33m\e[0m");
+    is(ta_trunc($t, 0), "\e[31m\e[32m\e[33m\e[0m");
 };
 
 subtest "ta_mbtrunc" => sub {
-    my $t = "\x1b[31m不\x1b[32m用\x1b[33m陪\x1b[0m我";
+    my $t = "\e[31m不\e[32m用\e[33m陪\e[0m我";
     is(ta_mbtrunc($t, 9), $t);
     is(ta_mbtrunc($t, 8), $t);
-    is(ta_mbtrunc($t, 7), "\x1b[31m不\x1b[32m用\x1b[33m陪\x1b[0m");
-    is(ta_mbtrunc($t, 6), "\x1b[31m不\x1b[32m用\x1b[33m陪\x1b[0m");
-    is(ta_mbtrunc($t, 5), "\x1b[31m不\x1b[32m用\x1b[33m\x1b[0m");
-    is(ta_mbtrunc($t, 4), "\x1b[31m不\x1b[32m用\x1b[33m\x1b[0m");
-    is(ta_mbtrunc($t, 3), "\x1b[31m不\x1b[32m\x1b[33m\x1b[0m");
-    is(ta_mbtrunc($t, 2), "\x1b[31m不\x1b[32m\x1b[33m\x1b[0m");
-    is(ta_mbtrunc($t, 1), "\x1b[31m\x1b[32m\x1b[33m\x1b[0m");
-    is(ta_mbtrunc($t, 0), "\x1b[31m\x1b[32m\x1b[33m\x1b[0m");
+    is(ta_mbtrunc($t, 7), "\e[31m不\e[32m用\e[33m陪\e[0m");
+    is(ta_mbtrunc($t, 6), "\e[31m不\e[32m用\e[33m陪\e[0m");
+    is(ta_mbtrunc($t, 5), "\e[31m不\e[32m用\e[33m\e[0m");
+    is(ta_mbtrunc($t, 4), "\e[31m不\e[32m用\e[33m\e[0m");
+    is(ta_mbtrunc($t, 3), "\e[31m不\e[32m\e[33m\e[0m");
+    is(ta_mbtrunc($t, 2), "\e[31m不\e[32m\e[33m\e[0m");
+    is(ta_mbtrunc($t, 1), "\e[31m\e[32m\e[33m\e[0m");
+    is(ta_mbtrunc($t, 0), "\e[31m\e[32m\e[33m\e[0m");
 };
 
 subtest "ta_pad" => sub {
-    my $foo = "\x1b[31;47mfoo\x1b[0m";
+    my $foo = "\e[31;47mfoo\e[0m";
     is(ta_pad(""    , 10), "          ", "empty");
     is(ta_pad("$foo", 10), "$foo       ");
     is(ta_pad("$foo", 10, "l"), "       $foo");
@@ -162,7 +162,7 @@ subtest "ta_pad" => sub {
 };
 
 subtest "ta_mbpad" => sub {
-    my $foo = "\x1b[31;47m你好吗\x1b[0m";
+    my $foo = "\e[31;47m你好吗\e[0m";
     is(ta_mbpad(""    , 10), "          ", "empty");
     is(ta_mbpad("$foo", 10), "$foo    ");
     is(ta_mbpad("$foo", 10, "l"), "    $foo");
@@ -170,7 +170,7 @@ subtest "ta_mbpad" => sub {
     is(ta_mbpad("$foo", 10, "r", "x"), "${foo}xxxx");
     is(ta_mbpad("${foo}12345678", 10), "${foo}12345678");
     is(ta_mbpad("${foo}12345678", 10, undef, undef, 1), "${foo}1234");
-    is(ta_mbpad("$foo", 3, undef, undef, 1), "\x1b[31;47m你\x1b[0m ",
+    is(ta_mbpad("$foo", 3, undef, undef, 1), "\e[31;47m你\e[0m ",
        "repad truncated");
 };
 
