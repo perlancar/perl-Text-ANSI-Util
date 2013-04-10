@@ -31,16 +31,16 @@ our @EXPORT_OK = qw(
 
 # used to find/strip escape codes from string
 our $re       = qr/
-                      #\x1b\[ (?: (\d+) ((?:;[^;]+?)*) )? ([\x40-\x7e])
+                      #\e\[ (?: (\d+) ((?:;[^;]+?)*) )? ([\x40-\x7e])
                       # without captures
-                      \x1b\[ (?: \d+ (?:;[^;]+?)* )? [\x40-\x7e]
+                      \e\[ (?: \d+ (?:;[^;]+?)* )? [\x40-\x7e]
                   /osx;
 
 # used to split into words
 our $re_words = qr/
                       (?:
                           \S+ |
-                          \x1b\[ (?: \d+ (?:;[^;]+?)*)? [\x40-\x7e]
+                          \e\[ (?: \d+ (?:;[^;]+?)*)? [\x40-\x7e]
                       )+
 
                   |
@@ -258,25 +258,25 @@ sub ta_mbtrunc {
 
  # detect whether text has ANSI escape codes?
  say ta_detect("red");         # => false
- say ta_detect("\x1b[31mred"); # => true
+ say ta_detect("\e[31mred"); # => true
 
  # calculate length of text (excluding the ANSI escape codes)
  say ta_length("red");         # => 3
- say ta_length("\x1b[31mred"); # => 3
+ say ta_length("\e[31mred"); # => 3
 
  # calculate visual width of text if printed on terminal (can handle Unicode
  # wide characters and exclude the ANSI escape codes)
- say ta_mbswidth("\x1b[31mred"); # => 3
- say ta_mbswidth("\x1b[31m红色"); # => 4
+ say ta_mbswidth("\e[31mred"); # => 3
+ say ta_mbswidth("\e[31m红色"); # => 4
 
  # ditto, but also return the number of lines
- say ta_mbswidth_height("\x1b[31mred\n红色"); # => [4, 2]
+ say ta_mbswidth_height("\e[31mred\n红色"); # => [4, 2]
 
  # strip ANSI escape codes
- say ta_strip("\x1b[31mred"); # => "red"
+ say ta_strip("\e[31mred"); # => "red"
 
  # split codes (ANSI codes are always on the even positions)
- my @parts = ta_split_codes("\x1b[31mred"); # => ("", "\x1b[31m", "red")
+ my @parts = ta_split_codes("\e[31mred"); # => ("", "\e[31m", "red")
 
  # wrap text to a certain column width, handle ANSI escape codes
  say ta_wrap("....", 40);
