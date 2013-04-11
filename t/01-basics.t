@@ -9,6 +9,7 @@ use constant NL => "\n";
 use POSIX;
 use Test::More 0.98;
 use Text::ANSI::Util qw(
+                           ta_add_color_resets
                            ta_detect ta_length ta_mbpad ta_mbswidth
                            ta_mbswidth_height ta_mbtrunc ta_mbwrap ta_pad
                            ta_split_codes ta_split_codes_single
@@ -188,6 +189,14 @@ subtest "ta_highlight" => sub {
 subtest "ta_highlight_all" => sub {
     is(ta_highlight_all("\e[1m\e[31m12345\e[32m674567\e[0m", "456", "\e[7m"),
        "\e[1m\e[31m123\e[7m45\e[0m\e[1m\e[31m\e[7m6\e[0m\e[1m\e[31m\e[32m7\e[7m456\e[0m\e[1m\e[31m\e[32m7\e[0m");
+};
+
+subtest "ta_add_color_resets" => sub {
+    is_deeply([ta_add_color_resets("\e[31mred and \e[1mbold", "beureum", "merah\e[0m normal", "normale")],
+              ["\e[31mred and \e[1mbold\e[0m",
+               "\e[31m\e[1mbeureum\e[0m",
+               "\e[31m\e[1mmerah\e[0m normal",
+               "\e[0mnormale"]);
 };
 
 DONE_TESTING:

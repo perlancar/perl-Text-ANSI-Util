@@ -13,6 +13,7 @@ use Text::WideChar::Util qw(mbtrunc);
 require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(
+                       ta_add_color_resets
                        ta_detect
                        ta_highlight
                        ta_highlight_all
@@ -37,18 +38,6 @@ our $re       = qr/
                       #\e\[ (?: (\d+) ((?:;[^;]+?)*) )? ([\x40-\x7e])
                       # without captures
                       \e\[ (?: \d+ (?:;[^;]+?)* )? [\x40-\x7e]
-                  /osx;
-
-# used to split into words
-our $re_words = qr/
-                      (?:
-                          \S+ |
-                          \e\[ (?: \d+ (?:;[^;]+?)*)? [\x40-\x7e]
-                      )+
-
-                  |
-
-                      \s+
                   /osx;
 
 sub ta_detect {
@@ -107,66 +96,74 @@ sub _ta_wrap {
     my ($is_mb, $text, $width) = @_;
     $width //= 80;
 
-    my @res;
-    my @p = $text =~ /($re_words)/g;
-    #use Data::Dump; dd \@p;
-    my $col = 0;
-    my $i = 0;
-    while (my $p = shift(@p)) {
-        $i++;
-        my $num_nl = 0;
-        my $is_pb; # paragraph break
-        my $is_ws;
-        my $w;
-        #say "D:col=$col, p=[$p]";
-        if ($p =~ /\A\s/s) {
-            $is_ws++;
-            $num_nl++ while $p =~ s/\r?\n//;
-            if ($num_nl >= 2) {
-                $is_pb++;
-                $w = 0;
-            } else {
-                $p = " ";
-                $w = 1;
-            }
-        } else {
-            if ($is_mb) {
-                $w = _ta_mbswidth0($p);
-            } else {
-                $w = ta_length($p);
-            }
-        }
-        $col += $w;
-        #say "D:col=$col, is_pb=${\($is_pb//0)}, is_ws=${\($is_ws//0)}, num_nl=$num_nl";
+    # my @res = ("\e[0m");;
+    # my @chunks = ta_split_codes_single($text);
+    # my $savedc;
+    # my $col = 0;
+    # while (my ($chtext, $chcode) = splice(@chunk, 0, 2)) {
+    #     if (defined($chcode) && $chcode =~ /m\z/) {
+    #         if ($c eq "\e[0m") {
+    #             $savedc = "";
+    #         } else {
+    #             $savedc .= $chcode;
+    #         }
+    #     }
 
-        if ($is_pb) {
-            push @res, "\n" x $num_nl;
-            $col = 0;
-        } elsif ($col > $width+1) {
-            # remove space at the end of prev line
-            if (@res && $res[-1] eq ' ') {
-                pop @res;
-            }
+    #     my $word;
 
-            push @res, "\n";
-            if ($is_ws) {
-                $col = 0;
-            } else {
-                push @res, $p;
-                $col = $w;
-            }
-        } else {
-            # remove space at the end of text
-            if (@p || !$is_ws) {
-                push @res, $p;
-            } else {
-                if ($num_nl == 1) {
-                    push @res, "\n";
-                }
-            }
-        }
-    }
-    join "", @res;
+    #     my $num_nl = 0;
+    #     my $is_pb; # paragraph break
+    #     my $is_ws;
+    #     my $w;
+    #     #say "D:col=$col, p=[$p]";
+    #     if ($p =~ /\A\s/s) {
+    #         $is_ws++;
+    #         $num_nl++ while $p =~ s/\r?\n//;
+    #         if ($num_nl >= 2) {
+    #             $is_pb++;
+    #             $w = 0;
+    #         } else {
+    #             $p = " ";
+    #             $w = 1;
+    #         }
+    #     } else {
+    #         if ($is_mb) {
+    #             $w = _ta_mbswidth0($p);
+    #         } else {
+    #             $w = ta_length($p);
+    #         }
+    #     }
+    #     $col += $w;
+    #     #say "D:col=$col, is_pb=${\($is_pb//0)}, is_ws=${\($is_ws//0)}, num_nl=$num_nl";
+
+    #     if ($is_pb) {
+    #         push @res, "\n" x $num_nl;
+    #         $col = 0;
+    #     } elsif ($col > $width+1) {
+    #         # remove space at the end of prev line
+    #         if (@res && $res[-1] eq ' ') {
+    #             pop @res;
+    #         }
+
+    #         push @res, "\n";
+    #         if ($is_ws) {
+    #             $col = 0;
+    #         } else {
+    #             push @res, $p;
+    #             $col = $w;
+    #         }
+    #     } else {
+    #         # remove space at the end of text
+    #         if (@p || !$is_ws) {
+    #             push @res, $p;
+    #         } else {
+    #             if ($num_nl == 1) {
+    #                 push @res, "\n";
+    #             }
+    #         }
+    #     }
+    # }
+    # join "", @res;
 }
 
 sub ta_wrap {
@@ -258,16 +255,12 @@ sub ta_mbtrunc {
 sub _ta_highlight {
     my ($is_all, $text, $needle, $color) = @_;
 
-    # our technique to not mess up existing color is to save up all ANSI color
-    # codes (m commands) from the last reset/normal (\e[0m). then after we
-    # insert the highlight, we reinsert the saved up codes.
-
     # break into chunks
     my (@chtext, @chcode, @chsavedc); # chunk texts, codes, saved codes
     my $sc = "";
     my $plaintext = "";
-    my @p = ta_split_codes_single($text);
-    while (my ($t, $c) = splice(@p, 0, 2)) {
+    my @ch = ta_split_codes_single($text);
+    while (my ($t, $c) = splice(@ch, 0, 2)) {
         push @chtext  , $t;
         push @chcode  , $c;
         push @chsavedc, $sc;
@@ -404,6 +397,37 @@ sub ta_highlight_all {
     _ta_highlight(1, @_);
 }
 
+sub ta_add_color_resets {
+    my (@text) = @_;
+
+    my @res;
+    my $i = 0;
+    my $savedc = "";
+    for my $text (@text) {
+        $i++;
+        my $newt = $i > 1 && !$savedc ? "\e[0m" : $savedc;
+
+        # break into chunks
+        my @ch = ta_split_codes_single($text);
+        while (my ($t, $c) = splice(@ch, 0, 2)) {
+            $newt .= $t;
+            if (defined($c) && $c =~ /m\z/) {
+                $newt .= $c;
+                if ($c eq "\e[0m") {
+                    $savedc = "";
+                } else {
+                    $savedc .= $c;
+                }
+            }
+        }
+
+        $newt .= "\e[0m" if $savedc && $i < @text;
+        push @res, $newt;
+    }
+
+    @res;
+}
+
 1;
 # ABSTRACT: Routines for text containing ANSI escape codes
 
@@ -412,6 +436,7 @@ sub ta_highlight_all {
 =head1 SYNOPSIS
 
  use Text::ANSI::Util qw(
+     ta_add_color_resets
      ta_detect ta_highlight ta_highlight_all ta_length ta_mbpad ta_mbswidth
      ta_mbswidth_height ta_mbwrap ta_pad ta_split_codes ta_split_codes_single
      ta_strip ta_wrap);
@@ -576,6 +601,45 @@ ASCII 32 (for example, the Chinese dot 。).
 Performance: currently rather abysmal (~ 1000/s on my Core i5-2400 3.1GHz
 desktop for a ~ 1KB of text).
 
+=head2 ta_add_color_resets(@text) => LIST
+
+Make sure that a color reset command (C<\e[0m]>) is added at the end of each
+element and a color restart (all the color codes in the element from the last
+reset) is readded at the start of the next element, and so on. Return the new
+list.
+
+This makes each element safe to be combined with other array of text into a
+single line, e.g. in a multicolumn/tabular layout. An example:
+
+Without color resets:
+
+ my @col1 = split /\n/, "\e[31mred\nmerah\e[0m";
+ my @col2 = split /\n/, "\e[32mgreen\e[1m\nhijau tebal\e[0m";
+
+ printf "%s | %s\n", $col1[0], $col2[0];
+ printf "%s | %s\n", $col1[1], $col2[1];
+
+the printed output:
+
+ \e[31mred | \e[32mgreen
+ merah\e[0m | \e[1mhijau tebal\e[0m
+
+The C<merah> text on the second line will become green because of the effect of
+the last color command printed (C<\e[32m>). However, with ta_add_color_resets():
+
+ my @col1 = ta_add_color_resets(split /\n/, "\e[31mred\nmerah\e[0m");
+ my @col2 = ta_add_color_resets(split /\n/, "\e[32mgreen\e[1m\nhijau tebal\e[0m");
+
+ printf "%s | %s\n", $col1[0], $col2[0];
+ printf "%s | %s\n", $col1[1], $col2[1];
+
+the printed output (C<< <...> >>) marks the code added by ta_add_color_resets():
+
+ \e[31mred<\e[0m> | \e[32mgreen\e[1m<\e[0m>
+ <\e[31m>merah\e[0m | <\e[32m\e[1m>hijau tebal\e[0m
+
+All the cells are printed with the intended colors.
+
 =head2 ta_pad($text, $width[, $which[, $padchar[, $truncate]]]) => STR
 
 Return C<$text> padded with C<$padchar> to C<$width> columns. C<$which> is
@@ -615,12 +679,19 @@ C<$needle> can be a string or a Regexp object.
 Performance: ~ 20k/s on my Core i5-2400 3.1GHz desktop for a ~ 1KB of text and a
 needle of length ~ 7.
 
+Implementation note: to not mess up colors, we save up all color codes from the
+last reset (C<\e[0m]>) before inserting the highlight color + highlight text.
+Then we issue C<\e[0m> and the saved up color code to return back to the color
+state before the highlight is inserted. This is the same technique as described
+in ta_add_color_resets().
+
 =head2 ta_highlight_all($text, $needle, $color) => STR
 
 Like ta_highlight(), but highlight all occurences instead of only the first.
 
 Performance: ~ 4k/s on my Core i5-2400 3.1GHz desktop for a ~ 1KB of text and a
 needle of length ~ 7 and number of occurences ~ 13.
+
 
 =head1 FAQ
 
