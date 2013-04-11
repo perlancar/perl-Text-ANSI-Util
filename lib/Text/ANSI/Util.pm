@@ -587,7 +587,7 @@ Like ta_highlight(), but highlight all occurences instead of only the first.
 
 =head2 How do I truncate string based on number of characters?
 
-You can simply use Perl's ta_trunc() even on text containing wide characters.
+You can simply use ta_trunc() even on text containing wide characters.
 ta_trunc() uses Perl's length() which works on a per-character basis.
 
 
