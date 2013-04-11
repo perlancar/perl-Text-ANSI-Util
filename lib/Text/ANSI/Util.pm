@@ -560,8 +560,8 @@ Wrap C<$text> to C<$width> columns.
 
 C<$width> defaults to 80 if not specified.
 
-Note: currently performance is rather abysmal (~ 1200/s on my Core i5-2400
-3.1GHz desktop for a ~ 1KB of text), so call this routine sparingly ;-).
+Performance: currently rather abysmal (~ 1200/s on my Core i5-2400 3.1GHz
+desktop for a ~ 1KB of text).
 
 =head2 ta_mbwrap($text, $width) => STR
 
@@ -573,8 +573,8 @@ will have to separate the words first (e.g. using L<Lingua::ZH::WordSegmenter>).
 The module also currently does not handle whitespace-like characters other than
 ASCII 32 (for example, the Chinese dot 。).
 
-Note: currently performance is rather abysmal (~ 1000/s on my Core i5-2400
-3.1GHz desktop for a ~ 1KB of text), so call this routine sparingly ;-).
+Performance: currently rather abysmal (~ 1000/s on my Core i5-2400 3.1GHz
+desktop for a ~ 1KB of text).
 
 =head2 ta_pad($text, $width[, $which[, $padchar[, $truncate]]]) => STR
 
@@ -612,10 +612,15 @@ care not to mess up existing colors.
 
 C<$needle> can be a string or a Regexp object.
 
+Performance: ~ 20k/s on my Core i5-2400 3.1GHz desktop for a ~ 1KB of text and a
+needle of length ~ 7.
+
 =head2 ta_highlight_all($text, $needle, $color) => STR
 
 Like ta_highlight(), but highlight all occurences instead of only the first.
 
+Performance: ~ 4k/s on my Core i5-2400 3.1GHz desktop for a ~ 1KB of text and a
+needle of length ~ 7 and number of occurences ~ 13.
 
 =head1 FAQ
 
