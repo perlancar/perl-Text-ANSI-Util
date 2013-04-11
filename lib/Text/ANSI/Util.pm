@@ -256,21 +256,21 @@ sub ta_mbtrunc {
 }
 
 sub _ta_highlight {
-    my ($is_all, $text, $needle, $color, $ci) = @_;
+    my ($is_all, $text, $needle, $color) = @_;
 
     # our technique to not mess up existing color is to save up all ANSI color
     # codes (m commands) from the last reset/normal (\e[0m). then after we
     # insert the highlight, we reinsert the saved up codes.
 
     # break into chunks
-    my @p = ta_split_codes_single($text);
-    my (@t, @c, @sc); # texts, codes, saved codes
+    my (@chtext, @chcode, @chsavedc); # chunk texts, codes, saved codes
     my $sc = "";
     my $plaintext = "";
+    my @p = ta_split_codes_single($text);
     while (my ($t, $c) = splice(@p, 0, 2)) {
-        push @t, $t;
-        push @c, $c;
-        push @sc, $sc;
+        push @chtext  , $t;
+        push @chcode  , $c;
+        push @chsavedc, $sc;
         $plaintext .= $t;
         if (defined($c) && $c =~ /m\z/) {
             if ($c eq "\e[0m") {
@@ -280,79 +280,111 @@ sub _ta_highlight {
             }
         }
     }
-    #use Data::Dump; print "\@t: "; dd \@t; print "\@c: "; dd \@c; print "\@sc: "; dd \@sc;
+    #use Data::Dump; print "\@chtext: "; dd \@chtext; print "\@chcode: "; dd \@chcode; print "\@chsavedc: "; dd \@chsavedc;
 
-    if ($ci) {
-        $text = lc($text);
-        $needle = lc($needle);
+    # gather a list of needles to highlight, with their positions
+    my (@needle, @npos);
+    if (ref($needle) eq 'Regexp') {
+        my @m = $plaintext =~ /$needle/g;
+        return $text unless @m;
+        my $pos = 0;
+        while ($pos < length($plaintext)) {
+            my @pt;
+            for (@m) {
+                my $p = index($plaintext, $_, $pos);
+                push @pt, [$p, $_] if $p >= 0;
+            }
+            last unless @pt;
+            my $pmin = $pt[0][0];
+            my $t = $pt[0][1];
+            for (@pt) {
+                if ($pmin > $_->[0] ||
+                        $pmin==$_->[0] && length($t) < length($_->[1])) {
+                    $pmin = $_->[0];
+                    $t = $_->[1];
+                }
+            }
+            push @needle, $t;
+            push @npos  , $pmin;
+            last unless $is_all;
+            $pos = $pmin + length($t);
+        }
+    } else {
+        my $pos = 0;
+        while (1) {
+            #say "D:finding '$needle' in '$plaintext' from pos '$pos'";
+            my $p = index($plaintext, $needle, $pos);
+            last if $p < 0;
+            push @needle, $needle;
+            push @npos  , $p;
+            last unless $is_all;
+            $pos = $p + length($needle);
+            last if $pos >= length($plaintext);
+        }
+        return $text unless @needle;
     }
-    my $npos = index($plaintext, $needle);
-    return $text unless $npos >= 0;
+    #use Data::Dump; print "\@needle: "; dd \@needle; print "\@npos: "; dd \@npos;
 
     my @res;
     my $found = 1;
     my $pos = 0;
     my $i = 0;
+    my $curneed = shift @needle;
+    my $npos    = shift @npos;
   CHUNK:
     while (1) {
-        last if $i >= @t;
-        my $pos2  = $pos+length($t[$i])-1;
-        my $npos2 = $npos+length($needle)-1;
-        #say "D: npos=$npos, npos2=$npos2, pos=$pos, pos2=$pos2";
+        last if $i >= @chtext;
+        my $pos2  = $pos+length($chtext[$i])-1;
+        my $npos2 = $npos+length($curneed)-1;
+        #say "D: chunk=[$chtext[$i]], npos=$npos, npos2=$npos2, pos=$pos, pos2=$pos2";
         if ($pos > $npos2 || $pos2 < $npos || !$found) {
-            #say "D:inserting chunk: [$t[$i]]";
+            #say "D:inserting chunk: [$chtext[$i]]";
             # no need to highlight
-            push @res, $t[$i];
-            push @res, $c[$i] if defined $c[$i];
+            push @res, $chtext[$i];
+            push @res, $chcode[$i] if defined $chcode[$i];
             goto L1;
         }
 
         # there is chunk text at the left of needle?
         if ($pos < $npos) {
-            my $pre = substr($t[$i], 0, $npos-$pos);
+            my $pre = substr($chtext[$i], 0, $npos-$pos);
             #say "D:inserting pre=[$pre]";
             push @res, $pre;
         }
 
-        my $npart = substr($needle,
+        my $npart = substr($curneed,
                            max(0, $pos-$npos),
                            min($pos2, $npos2)-max($pos, $npos)+1);
         if (length($npart)) {
             #say "D:inserting npart=[$npart]";
             push @res, $color, $npart;
             push @res, "\e[0m";
-            #use Data::Dump; dd [$sc[$i], $c[$i]];
-            push @res, $sc[$i];
+            #use Data::Dump; dd [$chsaved[$i], $chcode[$i]];
+            push @res, $chsavedc[$i];
         }
 
-        # there is chunk text at the right of needle?
+        # is there chunk text at the right of needle?
         if ($npos2 <= $pos2) {
-            #say "D:We have run past needle";
-            my $post = substr($t[$i], $npos2-$pos+1);
+            #say "D:We have run past current needle [$curneed]";
+            my $post = substr($chtext[$i], $npos2-$pos+1);
 
-            # ready to find next occurence?
-            if ($is_all) {
-                #say "D:Finding another needle ($needle) from pos ", ($npos2+1);
-                my $new_npos = index($plaintext, $needle, $npos2+1);
-                if ($new_npos >= 0) {
-                    $found++;
-                    $pos   = $npos2+1;
-                    $npos2 = $new_npos + length($needle)-1;
-                    #say "D:Replacing chunk for new needle search: [$post]";
-                    $t[$i] = $post;
-                    $npos = $new_npos;
-                    redo CHUNK;
-                } else {
-                    $found = 0;
-                }
+            if (@needle) {
+                $curneed = shift @needle;
+                $npos    = shift @npos;
+                #say "D:Finding the next needle ($curneed) at pos $npos";
+                $pos     = $npos2+1;
+                $chtext[$i] = $post;
+                $found = 1;
+                redo CHUNK;
             } else {
+                # we're done finding needle
                 $found = 0;
             }
 
             if (!$found) {
                 #say "D:inserting post=[$post]";
                 push @res, $post;
-                push @res, $c[$i] if defined $c[$i];
+                push @res, $chcode[$i] if defined $chcode[$i];
             }
         }
 
@@ -573,14 +605,14 @@ Does *not* handle multiline text; you can split text by C</\r?\n/> yourself.
 Like ta_trunc() but it uses ta_mbswidth() instead of ta_length(), so it can
 handle wide characters.
 
-=head2 ta_highlight($text, $needle, $color, $ci) => STR
+=head2 ta_highlight($text, $needle, $color) => STR
 
 Highlight the first occurence of C<$needle> in C<$text> with <$color>, taking
 care not to mess up existing colors.
 
-C<$ci> can be set to 1 to search case-insensitively.
+C<$needle> can be a string or a Regexp object.
 
-=head2 ta_highlight_all($text, $needle, $color, $ci) => STR
+=head2 ta_highlight_all($text, $needle, $color) => STR
 
 Like ta_highlight(), but highlight all occurences instead of only the first.
 
@@ -592,10 +624,22 @@ Like ta_highlight(), but highlight all occurences instead of only the first.
 You can simply use ta_trunc() even on text containing wide characters.
 ta_trunc() uses Perl's length() which works on a per-character basis.
 
+=head2 How do I highlight a string case-insensitively?
+
+You can currently use a regex for the C<$needle> and use the C<i> modifier.
+Example:
+
+ use Term::ANSIColor;
+ ta_highlight($text, qr/\b(foo)\b/i, color("bold red"));
+
 
 =head1 TODOS
 
 =over
+
+=item * ta_split
+
+A generalized version of ta_split_lines().
 
 =back
 
