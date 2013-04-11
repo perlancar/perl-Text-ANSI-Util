@@ -375,6 +375,8 @@ sub ta_highlight_all {
 1;
 # ABSTRACT: Routines for text containing ANSI escape codes
 
+=encoding utf8
+
 =head1 SYNOPSIS
 
  use Text::ANSI::Util qw(
