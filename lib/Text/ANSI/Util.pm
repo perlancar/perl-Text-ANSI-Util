@@ -18,6 +18,7 @@ our @EXPORT_OK = qw(
                        ta_highlight
                        ta_highlight_all
                        ta_length
+                       ta_length_height
                        ta_mbpad
                        ta_mbswidth
                        ta_mbswidth_height
@@ -50,6 +51,29 @@ sub ta_length {
     length(ta_strip($text));
 }
 
+sub _ta_length_height {
+    my ($is_mb, $text) = @_;
+    my $num_lines = 0;
+    my @lens;
+    for my $e (split /(\r?\n)/, ta_strip($text)) {
+        if ($e =~ /\n/) {
+            $num_lines++;
+            next;
+        }
+        $num_lines = 1 if $num_lines == 0;
+        push @lens, $is_mb ? mbswidth($e) : length($e);
+    }
+    [max(@lens) // 0, $num_lines];
+}
+
+sub ta_length_height {
+    _ta_length_height(0, @_);
+}
+
+sub ta_mbswidth_height {
+    _ta_length_height(1, @_);
+}
+
 sub ta_strip {
     my $text = shift;
     $text =~ s/$re//og;
@@ -64,21 +88,6 @@ sub ta_split_codes {
 sub ta_split_codes_single {
     my $text = shift;
     return split(/($re)/, $text);
-}
-
-sub ta_mbswidth_height {
-    my $text = shift;
-    my $num_lines = 0;
-    my @lens;
-    for my $e (split /(\r?\n)/, ta_strip($text)) {
-        if ($e =~ /\n/) {
-            $num_lines++;
-            next;
-        }
-        $num_lines = 1 if $num_lines == 0;
-        push @lens, mbswidth($e);
-    }
-    [max(@lens) // 0, $num_lines];
 }
 
 # same like _ta_mbswidth, but without handling multiline text
@@ -529,6 +538,11 @@ Return true if C<$text> contains ANSI escape codes, false otherwise.
 Count the number of bytes in $text, while ignoring ANSI escape codes. Equivalent
 to C<< length(ta_strip($text) >>. See also: ta_mbswidth().
 
+=head2 ta_length_height($text) => [INT, INT]
+
+Like ta_length(), but also gives height (number of lines). For example, C<<
+ta_length_height("foobar\nb\n") >> gives [6, 3].
+
 =head2 ta_mbswidth($text) => INT
 
 Return visual width of C<$text> (in number of columns) if printed on terminal.
@@ -548,7 +562,7 @@ text first against C<< /\r?\n/ >>.
 =head2 ta_mbswidth_height($text) => [INT, INT]
 
 Like ta_mbswidth(), but also gives height (number of lines). For example, C<<
-ta_mbswidth_height("foobar\nb\n") >> gives [6, 3].
+ta_mbswidth_height("西爪哇\nb\n") >> gives [6, 3].
 
 =head2 ta_strip($text) => STR
 
