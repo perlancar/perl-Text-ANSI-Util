@@ -112,9 +112,13 @@ qq|want to go? I'll keep you company. Mr|.NL.
 qq|Goh, I'm fine. You don't have to keep...|;
 
 subtest "ta_wrap" => sub {
-    is(ta_wrap($txt1 , 40), $txt1w );
-    is(ta_wrap($txt1b, 40), $txt1bw);
-    is(ta_wrap($txt1c, 40), $txt1cw);
+    is(ta_wrap($txt1 , 40), $txt1w, "single paragraph" );
+    is(ta_wrap($txt1b, 40), $txt1bw, "multiple paragraph");
+    is(ta_wrap($txt1c, 40), $txt1cw, "no terminating newline");
+    is(ta_wrap("x xxxxxxxxxxxxxxxxxxxxx x", 10),
+       "x\nxxxxxxxxxx\nxxxxxxxxxx\nx x", "truncate long word 1");
+    is(ta_wrap("x \e[1mxxxxxxxxxxxxxxxxxxxxx\e0[m x", 10),
+       "x\n\e[1mxxxxxxxxxx\nxxxxxxxxxx\e[0m\nx x", "truncate long word 2");
 };
 
 my $txt2 = <<_;
@@ -131,6 +135,10 @@ qq|I'm fine. 吴先生. 我没事. You don't have|.NL.
 qq|to keep me company. 你不用陪我.|.NL;
 subtest "ta_mbwrap" => sub {
     is(ta_mbwrap($txt2, 40), $txt2w);
+    is(ta_wrap("x 里x里x里x里x里x里x里x x", 10),
+       "x\n里x里x里x\n里x里x里x\n里x x", "truncate long word 1");
+    is(ta_wrap("x \e[1m里x里x里x里x里x里x里x\e[0m x", 10),
+       "x\n\e[1m里x里x里x\n里x里x里x\n里x\e[0m x", "truncate long word 2");
 };
 
 subtest "ta_trunc" => sub {
