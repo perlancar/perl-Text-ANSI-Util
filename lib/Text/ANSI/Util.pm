@@ -105,11 +105,11 @@ sub _ta_wrap {
     my ($is_mb, $text, $width) = @_;
     $width //= 80;
 
-    # my @res = ("\e[0m");;
+    # my @res;
     # my @chunks = ta_split_codes_single($text);
     # my $savedc;
     # my $col = 0;
-    # while (my ($chtext, $chcode) = splice(@chunk, 0, 2)) {
+    # while (my ($chptext, $chcode) = splice(@chunk, 0, 2)) {
     #     if (defined($chcode) && $chcode =~ /m\z/) {
     #         if ($c eq "\e[0m") {
     #             $savedc = "";
@@ -265,15 +265,15 @@ sub _ta_highlight {
     my ($is_all, $text, $needle, $color) = @_;
 
     # break into chunks
-    my (@chtext, @chcode, @chsavedc); # chunk texts, codes, saved codes
+    my (@chptext, @chcode, @chsavedc); # chunk plain texts, codes, saved codes
     my $sc = "";
     my $plaintext = "";
     my @ch = ta_split_codes_single($text);
-    while (my ($t, $c) = splice(@ch, 0, 2)) {
-        push @chtext  , $t;
+    while (my ($pt, $c) = splice(@ch, 0, 2)) {
+        push @chptext , $pt;
         push @chcode  , $c;
         push @chsavedc, $sc;
-        $plaintext .= $t;
+        $plaintext .= $pt;
         if (defined($c) && $c =~ /m\z/) {
             if ($c eq "\e[0m") {
                 $sc = "";
@@ -282,7 +282,7 @@ sub _ta_highlight {
             }
         }
     }
-    #use Data::Dump; print "\@chtext: "; dd \@chtext; print "\@chcode: "; dd \@chcode; print "\@chsavedc: "; dd \@chsavedc;
+    #use Data::Dump; print "\@chptext: "; dd \@chptext; print "\@chcode: "; dd \@chcode; print "\@chsavedc: "; dd \@chsavedc;
 
     # gather a list of needles to highlight, with their positions
     my (@needle, @npos);
@@ -335,21 +335,21 @@ sub _ta_highlight {
     my $npos    = shift @npos;
   CHUNK:
     while (1) {
-        last if $i >= @chtext;
-        my $pos2  = $pos+length($chtext[$i])-1;
+        last if $i >= @chptext;
+        my $pos2  = $pos+length($chptext[$i])-1;
         my $npos2 = $npos+length($curneed)-1;
-        #say "D: chunk=[$chtext[$i]], npos=$npos, npos2=$npos2, pos=$pos, pos2=$pos2";
+        #say "D: chunk=[$chptext[$i]], npos=$npos, npos2=$npos2, pos=$pos, pos2=$pos2";
         if ($pos > $npos2 || $pos2 < $npos || !$found) {
-            #say "D:inserting chunk: [$chtext[$i]]";
+            #say "D:inserting chunk: [$chptext[$i]]";
             # no need to highlight
-            push @res, $chtext[$i];
+            push @res, $chptext[$i];
             push @res, $chcode[$i] if defined $chcode[$i];
             goto L1;
         }
 
         # there is chunk text at the left of needle?
         if ($pos < $npos) {
-            my $pre = substr($chtext[$i], 0, $npos-$pos);
+            my $pre = substr($chptext[$i], 0, $npos-$pos);
             #say "D:inserting pre=[$pre]";
             push @res, $pre;
         }
@@ -368,14 +368,14 @@ sub _ta_highlight {
         # is there chunk text at the right of needle?
         if ($npos2 <= $pos2) {
             #say "D:We have run past current needle [$curneed]";
-            my $post = substr($chtext[$i], $npos2-$pos+1);
+            my $post = substr($chptext[$i], $npos2-$pos+1);
 
             if (@needle) {
                 $curneed = shift @needle;
                 $npos    = shift @npos;
                 #say "D:Finding the next needle ($curneed) at pos $npos";
                 $pos     = $npos2+1;
-                $chtext[$i] = $post;
+                $chptext[$i] = $post;
                 $found = 1;
                 redo CHUNK;
             } else {
