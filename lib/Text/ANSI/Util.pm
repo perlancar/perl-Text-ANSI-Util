@@ -999,9 +999,17 @@ Example:
 
 =over
 
-=item * ta_split
+=item * ta_split($re, $text)
 
 A generalized version of ta_split_lines().
+
+=item * ta_match($re, $text)
+
+Regex search.
+
+=item * ta_replace($re, $str, $text) (and ta_replace_all)
+
+Regex substitution.
 
 =back
 
