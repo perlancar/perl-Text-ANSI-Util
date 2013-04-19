@@ -1010,4 +1010,6 @@ A generalized version of ta_split_lines().
 
 L<Term::ANSIColor>
 
+http://en.wikipedia.org/wiki/ANSI_escape_code
+
 =cut
