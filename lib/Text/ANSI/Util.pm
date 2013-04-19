@@ -366,7 +366,9 @@ sub _ta_wrap {
                         #
                         # there might be faster way, but it is expected that
                         # long words are not that common.
-                        $tword = "\e[0m" . $crcode . $c . $res->[0];
+                        $tword  = ($crcode ? "\e[0m" . $crcode : "") .
+                            $c . $res->[0];
+                        $twordw = $res->[1];
                     }
                     $c .= ta_extract_codes(substr($term, 0, $res->[2]));
                     #use Data::Dump; print "D:truncated word is "; dd $tword;
@@ -377,7 +379,7 @@ sub _ta_wrap {
                     $termw = $is_mb ? _ta_mbswidth0($term) : ta_length($term);
                 }
 
-                #use Data::Dump; print "D:words="; dd \@words;
+                #use Data::Dump; print "D:words="; dd \@words; print "D:wordsw="; dd \@wordsw;
                 # the core of the wrapping algo
                 for my $word (@words) {
                     my $wordw = shift @wordsw;

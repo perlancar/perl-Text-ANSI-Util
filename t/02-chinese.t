@@ -6,6 +6,7 @@ use warnings;
 use utf8;
 use constant NL => "\n";
 
+use Data::Dump qw(dump);
 use POSIX;
 use Test::More 0.98;
 use Text::ANSI::Util qw(
@@ -46,11 +47,27 @@ qq|company. 那你想去哪里？我陪你. Mr Goh,|.NL.
 qq|I'm fine. 吴先生. 我没事. You don't have|.NL.
 qq|to keep me company. 你不用陪我.|.NL;
 subtest "ta_mbwrap" => sub {
-    is(ta_mbwrap($txt2, 40), $txt2w);
-    is(ta_mbwrap("x 里x里x里x里x里x里x里x x", 10),
-       "x\n里x里x里x\n里x里x里x\n里x x", "truncate long word 1");
-    is(ta_mbwrap("x \e[1m里x里x里x里x里x里x里x\e[0m x", 10),
-       "x\n\e[1m里x里x里x\n里x里x里x\n里x\e[0m x", "truncate long word 2");
+    my ($res, $cres);
+
+    $res  = ta_mbwrap($txt2, 40);;
+    $cres = $txt2w;
+    is($res, $cres)
+        or diag dump([split /^/, $cres], [split /^/, $res]);
+
+    $res  = ta_mbwrap("x 里x里x里x里x里x里x里x x", 10);
+    $cres = "x\n里x里x里x\n里x里x里x\n里x x";
+    is($res, $cres, "truncate long word 1")
+        or diag dump([split /^/, $cres], [split /^/, $res]);
+
+    $res  = ta_mbwrap("x \e[1m里x里x里x里x里x里x里x\e[0m x", 10);
+    $cres = join("",
+                 "x\e[1m\e[0m\n",
+                 "\e[1m里x里x里x\e[0m\e[0m\n",
+                 "\e[1m\e[0m\e[1m里x里x里x\e[0m\e[0m\n",
+                 "\e[1m里x\e[0m x"
+             );
+    is($res, $cres, "truncate long word 2")
+        or diag dump([split /^/, $cres], [split /^/, $res]);
 };
 
 subtest "ta_mbtrunc" => sub {
