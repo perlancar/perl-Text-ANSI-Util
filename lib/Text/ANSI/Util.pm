@@ -889,7 +889,7 @@ mbwrap() can do about 2300/s.
 
 =head2 ta_add_color_resets(@text) => LIST
 
-Make sure that a color reset command (add C<\e[0m]>) to the end of each element
+Make sure that a color reset command (add C<\e[0m>) to the end of each element
 and a color restart (add all the color codes from the previous element, from the
 last color reset) to the start of the next element, and so on. Return the new
 list.
@@ -966,7 +966,7 @@ Performance: ~ 20k/s on my Core i5-2400 3.1GHz desktop for a ~ 1KB of text and a
 needle of length ~ 7.
 
 Implementation note: to not mess up colors, we save up all color codes from the
-last reset (C<\e[0m]>) before inserting the highlight color + highlight text.
+last reset (C<\e[0m>) before inserting the highlight color + highlight text.
 Then we issue C<\e[0m> and the saved up color code to return back to the color
 state before the highlight is inserted. This is the same technique as described
 in ta_add_color_resets().
