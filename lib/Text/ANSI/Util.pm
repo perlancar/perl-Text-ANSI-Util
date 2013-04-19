@@ -938,7 +938,7 @@ of 1 column.
 
 Does *not* handle multiline text; you can split text by C</\r?\n/> yourself.
 
-=head2 ta_mbpad => STR
+=head2 ta_mbpad($text, $width[, $which[, $padchar[, $truncate]]]) => STR
 
 Like ta_pad() but it uses ta_mbswidth() instead of ta_length(), so it can handle
 wide characters.
