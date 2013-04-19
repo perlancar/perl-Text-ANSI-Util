@@ -782,8 +782,8 @@ Return true if C<$text> contains ANSI escape codes, false otherwise.
 
 =head2 ta_length($text) => INT
 
-Count the number of bytes in $text, while ignoring ANSI escape codes. Equivalent
-to C<< length(ta_strip($text) >>. See also: ta_mbswidth().
+Count the number of characters in $text, while ignoring ANSI escape codes.
+Equivalent to C<< length(ta_strip($text) >>. See also: ta_mbswidth().
 
 =head2 ta_length_height($text) => [INT, INT]
 
