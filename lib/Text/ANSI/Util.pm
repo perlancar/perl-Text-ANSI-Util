@@ -698,16 +698,16 @@ sub ta_add_color_resets {
      ta_strip ta_wrap);
 
  # detect whether text has ANSI escape codes?
- say ta_detect("red");         # => false
+ say ta_detect("red");       # => false
  say ta_detect("\e[31mred"); # => true
 
  # calculate length of text (excluding the ANSI escape codes)
- say ta_length("red");         # => 3
+ say ta_length("red");       # => 3
  say ta_length("\e[31mred"); # => 3
 
  # calculate visual width of text if printed on terminal (can handle Unicode
  # wide characters and exclude the ANSI escape codes)
- say ta_mbswidth("\e[31mred"); # => 3
+ say ta_mbswidth("\e[31mred");  # => 3
  say ta_mbswidth("\e[31m红色"); # => 4
 
  # ditto, but also return the number of lines
@@ -736,7 +736,7 @@ sub ta_add_color_resets {
  # truncate text to a certain width while still passing ANSI escape codes
  use Term::ANSIColor;
  my $text = color("red")."red text".color("reset"); # => "\e[31mred text\e[0m"
- say ta_trunc($text, 5);           # => "\e[31mred t\e[0m"
+ say ta_trunc($text, 5);                            # => "\e[31mred t\e[0m"
 
  # ditto, but handle wide characters
  say ta_mbtrunc(...);
