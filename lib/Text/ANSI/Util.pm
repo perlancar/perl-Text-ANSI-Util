@@ -84,7 +84,7 @@ sub ta_strip {
 sub ta_extract_codes {
     my $text = shift;
     my $res = "";
-    $res .= $1 while $text =~ /($re)/go;
+    $res .= $1 while $text =~ /((?:$re)+)/go;
     $res;
 }
 
