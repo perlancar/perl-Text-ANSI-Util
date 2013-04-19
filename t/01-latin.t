@@ -12,7 +12,7 @@ use Text::ANSI::Util qw(
                            ta_detect ta_length ta_length_height ta_pad
                            ta_split_codes ta_split_codes_single
                            ta_strip ta_trunc ta_wrap ta_highlight
-                           ta_highlight_all);
+                           ta_highlight_all ta_extract_codes);
 
 subtest "ta_detect" => sub {
     ok(!ta_detect("a"), 'neg 1');
@@ -25,6 +25,12 @@ subtest "ta_strip" => sub {
     is(ta_strip(""), "");
     is(ta_strip("hello"), "hello");
     is(ta_strip("\e[31;47mhello\e[0m"), "hello");
+};
+
+subtest "ta_extract_codes" => sub {
+    is(ta_extract_codes(""), "");
+    is(ta_extract_codes("hello"), "");
+    is(ta_extract_codes("\e[31;47mhello\e[0m"), "\e[31;47m\e[0m");
 };
 
 subtest "ta_split_codes" => sub {

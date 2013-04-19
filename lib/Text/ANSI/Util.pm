@@ -15,6 +15,7 @@ our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(
                        ta_add_color_resets
                        ta_detect
+                       ta_extract_codes
                        ta_highlight
                        ta_highlight_all
                        ta_length
@@ -76,18 +77,25 @@ sub ta_mbswidth_height {
 
 sub ta_strip {
     my $text = shift;
-    $text =~ s/$re//og;
+    $text =~ s/$re//go;
     $text;
+}
+
+sub ta_extract_codes {
+    my $text = shift;
+    my $res = "";
+    $res .= $1 while $text =~ /($re)/go;
+    $res;
 }
 
 sub ta_split_codes {
     my $text = shift;
-    return split(/((?:$re)+)/, $text);
+    return split(/((?:$re)+)/o, $text);
 }
 
 sub ta_split_codes_single {
     my $text = shift;
-    return split(/($re)/, $text);
+    return split(/($re)/o, $text);
 }
 
 # same like _ta_mbswidth, but without handling multiline text
@@ -102,77 +110,215 @@ sub ta_mbswidth {
 }
 
 sub _ta_wrap {
-    my ($is_mb, $text, $width) = @_;
+    my ($is_mb, $text, $width, $opts) = @_;
     $width //= 80;
+    $opts  //= {};
 
-    # my @res;
-    # my @chunks = ta_split_codes_single($text);
-    # my $savedc;
-    # my $col = 0;
-    # while (my ($chptext, $chcode) = splice(@chunk, 0, 2)) {
-    #     if (defined($chcode) && $chcode =~ /m\z/) {
-    #         if ($c eq "\e[0m") {
-    #             $savedc = "";
-    #         } else {
-    #             $savedc .= $chcode;
-    #         }
-    #     }
+    # basically similar to Text::WideChar::Util's algorithm. we adjust for
+    # dealing with ANSI codes by splitting codes first (to easily do color
+    # resets/restarts), then grouping into words and paras, then doing wrapping.
 
-    #     my $word;
+    my @ch = ta_split_codes_single($text);
+    my $crcode = ""; # code for color restart to be put at the start of line
+    my @terms;
+    my @pterms; # store the plaintext ver, but only for ws to check parabreak
+    my @termsw; # store width of each term
+    my @termsc; # store color restart code
+    my $term     = '';
+    my $pterm    = '';
+    my $was_word = 0;
+    my $was_ws   = 0;
+    while (my ($pt, $c) = splice(@ch, 0, 2)) {
+        #use Data::Dump; print "D:chunk: "; dd [$pt, $c];
+        my @s = $pt =~ /(\S+|\s+)/gos;
+        my $once = 1 if !@s;
+        while ($once || defined(my $s = shift @s)) {
+            $term .= $c if $once;
+            $s //= "";
+            #say "D:s=[$s]  was_ws=$was_ws  was_word=$was_word  \@ch=",~~@ch,"  \@s=",~~@s;
 
-    #     my $num_nl = 0;
-    #     my $is_pb; # paragraph break
-    #     my $is_ws;
-    #     my $w;
-    #     #say "D:col=$col, p=[$p]";
-    #     if ($p =~ /\A\s/s) {
-    #         $is_ws++;
-    #         $num_nl++ while $p =~ s/\r?\n//;
-    #         if ($num_nl >= 2) {
-    #             $is_pb++;
-    #             $w = 0;
-    #         } else {
-    #             $p = " ";
-    #             $w = 1;
-    #         }
-    #     } else {
-    #         if ($is_mb) {
-    #             $w = _ta_mbswidth0($p);
-    #         } else {
-    #             $w = ta_length($p);
-    #         }
-    #     }
-    #     $col += $w;
-    #     #say "D:col=$col, is_pb=${\($is_pb//0)}, is_ws=${\($is_ws//0)}, num_nl=$num_nl";
+            if ($s =~ /\S/) {
+                if ($was_ws) {
+                    #say "D:found word, completed previous ws [$term]";
+                    push @terms , $term;
+                    push @pterms, $pterm;
+                    push @termsw, undef;
+                    push @termsc, $crcode;
+                    # start new word
+                    $pterm = ""; $term = "";
+                }
+                $pterm .= $s;
+                $term  .= $s; $term .= $c if defined($c) && !@s;
+                if (!@s && !@ch) {
+                    #say "D:complete word because this is the last token";
+                    push @terms , $term;
+                    push @pterms, undef;
+                    push @termsw, $is_mb ? mbswidth($pterm) : length($pterm);
+                    push @termsc, $crcode;
+                }
+                $was_ws = 0; $was_word = 1;
+            } elsif (length($s)) {
+                if ($was_word) {
+                    #say "D:found ws, completed previous word [$term]";
+                    push @terms , $term;
+                    push @pterms, undef;
+                    push @termsw, $is_mb ? mbswidth($pterm) : length($pterm);
+                    push @termsc, $crcode;
+                    # start new ws
+                    $pterm = ''; $term = '';
+                }
+                $pterm .= $s;
+                $term  .= $s; $term .= $c if defined($c) && !@s;
+                if (!@s && !@ch) {
+                    #say "D:complete ws because this is the last token";
+                    push @terms , $term;
+                    push @pterms, $pterm;
+                    push @termsw, undef;
+                    push @termsc, $crcode;
+                }
+                $was_ws = 1; $was_word = 0;
+            }
 
-    #     if ($is_pb) {
-    #         push @res, "\n" x $num_nl;
-    #         $col = 0;
-    #     } elsif ($col > $width+1) {
-    #         # remove space at the end of prev line
-    #         if (@res && $res[-1] eq ' ') {
-    #             pop @res;
-    #         }
+            if (!@s) {
+                if (defined($c) && $c =~ /m\z/) {
+                    if ($c eq "\e[0m") {
+                        #say "D:found color reset, emptying crcode";
+                        $crcode = "";
+                    } else {
+                        #say "D:adding to crcode";
+                        $crcode .= $c;
+                    }
+                }
+                last if $once;
+            }
 
-    #         push @res, "\n";
-    #         if ($is_ws) {
-    #             $col = 0;
-    #         } else {
-    #             push @res, $p;
-    #             $col = $w;
-    #         }
-    #     } else {
-    #         # remove space at the end of text
-    #         if (@p || !$is_ws) {
-    #             push @res, $p;
-    #         } else {
-    #             if ($num_nl == 1) {
-    #                 push @res, "\n";
-    #             }
-    #         }
-    #     }
-    # }
-    # join "", @res;
+        } # splice @s
+    } # splice @ch
+
+    use Data::Dump::Color; dd \@terms; dd \@termsc; dd \@pterms; dd \@termsw; return;
+
+    # now we group terms into paras: we find out flindent, slindent, and strip
+    # the rest of the whitespaces.
+    my @paras;
+    my $words  = [];
+    my $wordsw = [];
+    my $wordsc = [];
+    for my $i (0..$#terms) {
+        my $pwo;
+        {
+            push @paras, {words=>$words, wordsw=>$wordsw, };
+            $words = [];
+        }
+    }
+
+    # now we perform wrapping
+
+    my $tw = $opts->{tab_width} // 8;
+    die "Please specify a positive tab width" unless $tw > 0;
+    my $optfli  = $opts->{flindent};
+    my $optfliw = Text::WideChar::Util::_get_indent_width($is_mb, $optfli, $tw) if defined $optfli;
+    my $optsli  = $opts->{slindent};
+    my $optsliw = Text::WideChar::Util::_get_indent_width($is_mb, $optsli, $tw) if defined $optsli;
+    my @res;
+
+    my $paranum = 0;
+  PARA:
+    while (my ($paratext, $parabreak) = splice @paras, 0, 2) {
+        $paranum++;
+        my $x = 0;
+        my $y = 0;
+        my $line_has_word = 0;
+
+        # determine indents
+        my ($fli, $sli, $fliw, $sliw);
+        if (defined $optfli) {
+            $fli  = $optfli;
+            $fliw = $optfliw;
+        } else {
+            # XXX emacs can also treat ' #' as indent, e.g. when wrapping
+            # multi-line perl comment.
+            my ($ptextl1) = $paratext =~ /\A([^\n]*)/;
+            $ptextl1 = ta_strip($ptextl1);
+            ($fli) = $ptextl1 =~ /\A([ \t]*)\S/;
+            if (defined $fli) {
+                $fliw = Text::WideChar::Util::_get_indent_width($is_mb, $fli, $tw);
+            } else {
+                $fli  = "";
+                $fliw = 0;
+            }
+        }
+        if (defined $optsli) {
+            $sli  = $optsli;
+            $sliw = $optsliw;
+        } else {
+            my ($ptextl2) = $paratext =~ /\A[^\n]*\n([^\n]*)/;
+            $ptextl2 = ta_strip($ptextl2 // "");
+            ($sli) = $ptextl2 =~ /\A([ \t+]*)\S/;
+            if (defined $sli) {
+                $sliw = Text::WideChar::Util::_get_indent_width($is_mb, $sli, $tw);
+            } else {
+                $sli  = "";
+                $sliw = 0;
+            }
+        }
+        die "Subsequent indent must be less than width" if $sliw >= $width;
+
+        #push @res, $clrres if $paranum > 1;
+        push @res, $fli;
+        $x += $fliw;
+
+        # process each word
+        for my $word0 ($paratext =~ /(\S+)/g) {
+            my @words;
+            my @wordsw;
+            while (1) {
+                my $wordw = $is_mb ? mbswidth($word0) : length($word0);
+                if ($wordw <= $width-$sliw) {
+                    push @words , $word0;
+                    push @wordsw, $wordw;
+                    last;
+                }
+                # truncate long word
+                if ($is_mb) {
+                    my $res = mbtrunc($text, $width-$sliw, 1);
+                    push @words , $res->[0];
+                    push @wordsw, $res->[1];
+                    $word0 = substr($word0, length($res->[0]));
+                } else {
+                    my $w2 = substr($word0, 0, $width-$sliw);
+                    push @words , $w2;
+                    push @wordsw, $width-$sliw;
+                    $word0 = substr($word0, $width-$sliw);
+                }
+            }
+
+            for my $word (@words) {
+                my $wordw = shift @wordsw;
+                #say "x=$x word=$word wordw=$wordw line_has_word=$line_has_word width=$width";
+                if ($x + ($line_has_word ? 1:0) + $wordw <= $width) {
+                    if ($line_has_word) {
+                        push @res, " ";
+                        $x++;
+                    }
+                    push @res, $word;
+                    $x += $wordw;
+                } else {
+                    push @res, "\n", $sli, $word;
+                    $x = $sliw + $wordw;
+                    $y++;
+                }
+                $line_has_word++;
+            }
+        }
+
+        if (defined $parabreak) {
+            push @res, $parabreak;
+        } else {
+            push @res, "\n" if $paratext =~ /\n[ \t]*\z/;
+        }
+    }
+
+    join "", @res;
 }
 
 sub ta_wrap {
@@ -568,6 +714,10 @@ ta_mbswidth_height("西爪哇\nb\n") >> gives [6, 3].
 
 Strip ANSI escape codes from C<$text>, returning the stripped text.
 
+=head2 ta_extract_codes($text) => STR
+
+This is the opposite of ta_strip(), return only the ANSI codes in C<$text>.
+
 =head2 ta_split_codes($text) => LIST
 
 Split C<$text> to a list containing alternating ANSI escape codes and text. ANSI
@@ -593,33 +743,45 @@ so you can do something like:
 Like ta_split_codes() but each ANSI escape code is split separately, instead of
 grouped together.
 
-=head2 ta_wrap($text, $width) => STR
+=head2 ta_wrap($text, $width, \%opts) => STR
 
-Wrap C<$text> to C<$width> columns.
+Like L<Text::WideChar::Util>'s wrap() except handles ANSI escape codes. Perform
+color reset at the end of each line and a color restart at the start of
+subsequent line so the text is safe for combining in a multicolumn/tabular
+layout.
 
-C<$width> defaults to 80 if not specified.
+Options:
 
-Performance: currently rather abysmal (~ 1200/s on my Core i5-2400 3.1GHz
-desktop for a ~ 1KB of text).
+=over
 
-=head2 ta_mbwrap($text, $width) => STR
+=item * flindent => STR
+
+First line indent. See Text::WideChar::Util for more details.
+
+=item * slindent => STR
+
+First line indent. See Text::WideChar::Util for more details.
+
+=item * tab_width => INT (default: 8)
+
+First line indent. See Text::WideChar::Util for more details.
+
+=back
+
+*Performance: ~1000/s on my Core i5-2400 3.1GHz desktop for a ~1KB of text.
+
+=head2 ta_mbwrap($text, $width, \%opts) => STR
 
 Like ta_wrap(), but it uses ta_mbswidth() instead of ta_length(), so it can
 handle wide characters.
 
-Note: for text which does not have whitespaces between words, like Chinese, you
-will have to separate the words first (e.g. using L<Lingua::ZH::WordSegmenter>).
-The module also currently does not handle whitespace-like characters other than
-ASCII 32 (for example, the Chinese dot 。).
-
-Performance: currently rather abysmal (~ 1000/s on my Core i5-2400 3.1GHz
-desktop for a ~ 1KB of text).
+*Performance: ~1000/s on my Core i5-2400 3.1GHz desktop for a ~1KB of text.
 
 =head2 ta_add_color_resets(@text) => LIST
 
-Make sure that a color reset command (C<\e[0m]>) is added at the end of each
-element and a color restart (all the color codes in the element from the last
-reset) is readded at the start of the next element, and so on. Return the new
+Make sure that a color reset command (add C<\e[0m]>) to the end of each element
+and a color restart (add all the color codes from the previous element, from the
+last color reset) to the start of the next element, and so on. Return the new
 list.
 
 This makes each element safe to be combined with other array of text into a
