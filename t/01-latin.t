@@ -106,26 +106,35 @@ qq|Goh, I'm fine. You don't have to keep...|;
 subtest "ta_wrap" => sub {
     my ($res, $cres);
 
-    $res = ta_wrap($txt1 , 40);
-    is($res, $txt1w, "single paragraph" )
-        or diag dump([split /^/, $txt1w], [split /^/, $res]);
+    $res  = ta_wrap($txt1 , 40);
+    $cres = $txt1w;
+    is($res, $cres, "single paragraph")
+        or diag dump([split /^/, $cres], [split /^/, $res]);
 
-    $res = ta_wrap($txt1b, 40);
-    is($res, $txt1bw, "multiple paragraph")
-         or diag dump([split /^/, $txt1bw], [split /^/, $res]);
+    $res  = ta_wrap($txt1b, 40);
+    $cres = $txt1bw;
+    is($res, $cres, "multiple paragraph")
+        or diag dump([split /^/, $cres], [split /^/, $res]);
 
-    is(ta_wrap($txt1c, 40), $txt1cw, "no terminating newline");
+    $res  = ta_wrap($txt1c, 40);
+    $cres = $txt1cw;
+    is($res, $cres, "no terminating newline")
+        or diag dump([split /^/, $cres], [split /^/, $res]);
 
-    is(ta_wrap("x 12345678901234 x", 10),
-       "x\n1234567890\n1234 x", "truncate long word 1");
+    $res  = ta_wrap("x 12345678901234 x", 10);
+    $cres = "x\n1234567890\n1234 x";
+    is($res, $cres, "truncate long word 1")
+        or diag dump([split /^/, $cres], [split /^/, $res]);
 
-    $res = ta_wrap("x \e[1m12345678901234\e[0m x", 10);
-    $cres = "x\e[1m\e[0m\n\e[1m1234567890\e[0m\n\e[1m1234\e[0m x";
+    $res  = ta_wrap("x \e[1m12345678901234\e[0m x", 10);
+    $cres = "x\e[1m\e[0m\n\e[1m1234567890\e[0m\e[0m\n\e[1m1234\e[0m x";
     is($res, $cres, "truncate long word 2")
-         or diag dump([split /^/, $cres], [split /^/, $res]);
+        or diag dump([split /^/, $cres], [split /^/, $res]);
 
-    is(ta_wrap("x\n\e[1m\nx", 10),
-       "x\n\e[1m\nx", "color code in parabreak");
+    $res  = ta_wrap("x\n\e[1m\nx", 10);
+    $cres = "x\n\n\e[1mx";
+    is($res, $cres, "color code in parabreak")
+        or diag dump([split /^/, $cres], [split /^/, $res]);
 
     # XXX fli opt
     # XXX fli deduced

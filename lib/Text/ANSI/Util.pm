@@ -8,7 +8,7 @@ use warnings;
 
 use List::Util qw(min max);
 use Text::CharWidth qw(mbswidth);
-use Text::WideChar::Util qw(mbtrunc);
+use Text::WideChar::Util 0.04 qw(mbtrunc);
 
 require Exporter;
 our @ISA       = qw(Exporter);
@@ -261,7 +261,7 @@ sub _ta_wrap {
             my $pterm = $pterms[$i];
             my $termw = $termsw[$i];
             my $crcode = $i > 0 ? $termsc[$i-1] : "";
-            say "D:term=[", ($termt eq 'w' ? $term : $pterm), "] ($termt)";
+            #say "D:term=[", ($termt eq 'w' ? $term : $pterm), "] ($termt)";
 
             # end of paragraph
             if ($termt eq 'p') {
@@ -338,23 +338,43 @@ sub _ta_wrap {
                 # we need to chop long words
                 my @words;
                 my @wordsw;
+                my $j = 0;
+                my $c = ""; # see below for explanation
                 while (1) {
+                    $j++;
                     # most words shouldn't be that long
                     if ($termw <= $width-$sliw) {
                         push @words , $term;
                         push @wordsw, $termw;
                         last;
                     }
-                    use Data::Dump; print "D:truncating long word "; dd $term;
+                    #use Data::Dump; print "D:truncating long word "; dd $term;
                     my $res = $is_mb ? ta_mbtrunc($term, $width-$sliw, 1) :
                         ta_trunc($term, $width-$sliw, 1);
-                    use Data::Dump; print "D:truncated word is "; dd $res->[0];
 
-                    push @words , $res->[0];
-                    push @wordsw, $res->[1];
-                    $term  = substr($term, length($res->[0]));
+                    my ($tword, $twordw);
+                    if ($j == 1) {
+                        $tword  = $res->[0];
+                        $twordw = $res->[1];
+                    } else {
+                        # since ta_{,mb}trunc() adds the codes until the end of
+                        # the word, to avoid messing colors, for the second word
+                        # and so on we need to restart colors by prefixing with:
+                        # \e[0m (reset) + $crcode + (all the codes from the
+                        # start of the long word up until the truncated
+                        # position, stored in $c).
+                        #
+                        # there might be faster way, but it is expected that
+                        # long words are not that common.
+                        $tword = "\e[0m" . $crcode . $c . $res->[0];
+                    }
+                    $c .= ta_extract_codes(substr($term, 0, $res->[2]));
+                    #use Data::Dump; print "D:truncated word is "; dd $tword;
+
+                    push @words , $tword;
+                    push @wordsw, $twordw;
+                    $term  = substr($term, $res->[2]);
                     $termw = $is_mb ? _ta_mbswidth0($term) : ta_length($term);
-                    say "D:rest is [$term, length=",length($term),"] (width=$termw)";
                 }
 
                 #use Data::Dump; print "D:words="; dd \@words;
@@ -435,35 +455,44 @@ sub ta_mbpad {
 sub _ta_trunc {
     my ($is_mb, $text, $width, $return_width) = @_;
 
+    # return_width (undocumented): if set to 1, will return [truncated_text,
+    # visual width, length(chars) up to truncation point]
+
     my $w = $is_mb ? _ta_mbswidth0($text) : ta_length($text);
     if ($w <= $width) {
-        return $return_width ? [$text, $w] : $text;
+        return $return_width ? [$text, $w, length($text)] : $text;
     }
     my @p = ta_split_codes($text);
     my @res;
     my $append = 1; # whether we should add more text
     $w = 0;
+    my $c = 0;
     while (my ($t, $ansi) = splice @p, 0, 2) {
         if ($append) {
             my $tw = $is_mb ? mbswidth($t) : length($t);
             if ($w+$tw <= $width) {
                 push @res, $t;
                 $w += $tw;
+                $c += length($t);
                 $append = 0 if $w == $width;
             } else {
                 my $tres = $is_mb ?
                     mbtrunc($t, $width-$w, 1) :
-                        [substr($t, 0, $width-$w), $width-$w];
+                        [substr($t, 0, $width-$w), $width-$w, $width-$w];
                 push @res, $tres->[0];
                 $w += $tres->[1];
+                $c += $tres->[2];
                 $append = 0;
             }
         }
-        push @res, $ansi if defined($ansi);
+        if (defined $ansi) {
+            push @res, $ansi;
+            $c += length($ansi) if $append;
+        }
     }
 
     if ($return_width) {
-        return [join("", @res), $w];
+        return [join("", @res), $w, $c];
     } else {
         return join("", @res);
     }
