@@ -1010,6 +1010,9 @@ A generalized version of ta_split_lines().
 
 L<Term::ANSIColor>
 
+L<Text::ANSITable> uses this module. In fact, this module was first created
+specifically for Text::ANSITable.
+
 http://en.wikipedia.org/wiki/ANSI_escape_code
 
 =cut
