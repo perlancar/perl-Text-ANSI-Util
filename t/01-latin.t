@@ -5,6 +5,7 @@ use strict;
 use warnings;
 use constant NL => "\n";
 
+use Data::Dump qw(dump);
 use POSIX;
 use Test::More 0.98;
 use Text::ANSI::Util qw(
@@ -103,13 +104,34 @@ qq|want to go? I'll keep you company. Mr|.NL.
 qq|Goh, I'm fine. You don't have to keep...|;
 
 subtest "ta_wrap" => sub {
-    is(ta_wrap($txt1 , 40), $txt1w, "single paragraph" );
-    is(ta_wrap($txt1b, 40), $txt1bw, "multiple paragraph");
+    my ($res, $cres);
+
+    $res = ta_wrap($txt1 , 40);
+    is($res, $txt1w, "single paragraph" )
+        or diag dump([split /^/, $txt1w], [split /^/, $res]);
+
+    $res = ta_wrap($txt1b, 40);
+    is($res, $txt1bw, "multiple paragraph")
+         or diag dump([split /^/, $txt1bw], [split /^/, $res]);
+
     is(ta_wrap($txt1c, 40), $txt1cw, "no terminating newline");
-    is(ta_wrap("x xxxxxxxxxxxxxxxxxxxxx x", 10),
-       "x\nxxxxxxxxxx\nxxxxxxxxxx\nx x", "truncate long word 1");
-    is(ta_wrap("x \e[1mxxxxxxxxxxxxxxxxxxxxx\e0[m x", 10),
-       "x\n\e[1mxxxxxxxxxx\nxxxxxxxxxx\e[0m\nx x", "truncate long word 2");
+
+    is(ta_wrap("x 12345678901234 x", 10),
+       "x\n1234567890\n1234 x", "truncate long word 1");
+
+    $res = ta_wrap("x \e[1m12345678901234\e[0m x", 10);
+    $cres = "x\e[1m\e[0m\n\e[1m1234567890\e[0m\n\e[1m1234\e[0m x";
+    is($res, $cres, "truncate long word 2")
+         or diag dump([split /^/, $cres], [split /^/, $res]);
+
+    is(ta_wrap("x\n\e[1m\nx", 10),
+       "x\n\e[1m\nx", "color code in parabreak");
+
+    # XXX fli opt
+    # XXX fli deduced
+    # XXX fli opt
+    # XXX sli deduced
+    # XXX pad opt
 };
 
 subtest "ta_trunc" => sub {
