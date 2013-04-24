@@ -116,16 +116,16 @@ sub _ta_wrap {
 
     # basically similar to Text::WideChar::Util's algorithm. we adjust for
     # dealing with ANSI codes by splitting codes first (to easily do color
-    # resets/restarts), then grouping into words and paras, then doing wrapping.
+    # resets/replays), then grouping into words and paras, then doing wrapping.
 
     my @termst; # store term type, 's' (spaces), 'w' (word), or 'p' (parabreak)
     my @terms;  # store the text (w/ codes), for ws only store the codes
     my @pterms; # store the plaintext ver, but only for ws to check parabreak
     my @termsw; # store width of each term, only for non-ws
-    my @termsc; # store color restart code
+    my @termsc; # store color replay code
     {
         my @ch = ta_split_codes_single($text);
-        my $crcode = ""; # code for color restart to be put at the start of line
+        my $crcode = ""; # code for color replay to be put at the start of line
         my $term     = '';
         my $pterm    = '';
         my $was_word = 0;
@@ -359,7 +359,7 @@ sub _ta_wrap {
                     } else {
                         # since ta_{,mb}trunc() adds the codes until the end of
                         # the word, to avoid messing colors, for the second word
-                        # and so on we need to restart colors by prefixing with:
+                        # and so on we need to replay colors by prefixing with:
                         # \e[0m (reset) + $crcode + (all the codes from the
                         # start of the long word up until the truncated
                         # position, stored in $c).
@@ -847,7 +847,7 @@ grouped together.
 =head2 ta_wrap($text, $width, \%opts) => STR
 
 Like L<Text::WideChar::Util>'s wrap() except handles ANSI escape codes. Perform
-color reset at the end of each line and a color restart at the start of
+color reset at the end of each line and a color replay at the start of
 subsequent line so the text is safe for combining in a multicolumn/tabular
 layout.
 
@@ -890,9 +890,8 @@ mbwrap() can do about 2300/s.
 =head2 ta_add_color_resets(@text) => LIST
 
 Make sure that a color reset command (add C<\e[0m>) to the end of each element
-and a color restart (add all the color codes from the previous element, from the
-last color reset) to the start of the next element, and so on. Return the new
-list.
+and a replay of all the color codes from the previous element, from the last
+color reset) to the start of the next element, and so on. Return the new list.
 
 This makes each element safe to be combined with other array of text into a
 single line, e.g. in a multicolumn/tabular layout. An example:
