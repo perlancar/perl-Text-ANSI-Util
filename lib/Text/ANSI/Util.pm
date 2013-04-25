@@ -771,6 +771,13 @@ is C<0xc2, 0x9b> (2 bytes).
 
 =item * Private-mode- and trailing-intermediate character currently not parsed
 
+=item * Only color reset code \e[0m is recognized
+
+For simplicity, currently multiple SGR (select graphic rendition) parameters
+inside a single ANSI escape code is not parsed. This means that color reset code
+like C<\e[1;0m> or C<\e[31;47;0m> is not recognized, only C<\e[0m> is. I believe
+this should not be a problem with most real-world text out there.
+
 =back
 
 
