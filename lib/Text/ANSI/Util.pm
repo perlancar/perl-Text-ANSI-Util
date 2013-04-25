@@ -193,7 +193,7 @@ sub _ta_wrap {
                         if ($c eq "\e[0m") {
                             #say "D:found color reset, emptying crcode";
                             $crcode = "";
-                        } else {
+                        } elsif ($c =~ /m\z/) {
                             #say "D:adding to crcode";
                             $crcode .= $c;
                         }
@@ -524,7 +524,7 @@ sub _ta_highlight {
         if (defined($c) && $c =~ /m\z/) {
             if ($c eq "\e[0m") {
                 $sc = "";
-            } else {
+            } elsif ($c =~ /m\z/) {
                 $sc .= $c;
             }
         }
@@ -671,7 +671,7 @@ sub ta_add_color_resets {
                 $newt .= $c;
                 if ($c eq "\e[0m") {
                     $savedc = "";
-                } else {
+                } elsif ($c =~ /m\z/) {
                     $savedc .= $c;
                 }
             }
