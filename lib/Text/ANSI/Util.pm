@@ -725,7 +725,7 @@ sub ta_add_color_resets {
  # ditto, but handle wide characters
  say ta_mbwrap(...);
 
- # pad (left, right, center) text to a certain width, handles multiple lines
+ # pad (left, right, center) text to a certain width
  say ta_pad("foo", 10);                          # => "foo       "
  say ta_pad("foo", 10, "left");                  # => "       foo"
  say ta_pad("foo\nbarbaz\n", 10, "center", "."); # => "...foo....\n..barbaz..\n"
