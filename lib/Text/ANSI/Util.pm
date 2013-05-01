@@ -1007,8 +1007,6 @@ Example:
 
 =item * ta_split($re, $text)
 
-A generalized version of ta_split_lines().
-
 =item * ta_match($re, $text)
 
 Regex search.
