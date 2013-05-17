@@ -1,5 +1,12 @@
 Revision history for Text-ANSI-Util
 
+0.10    2013-05-17 (SHARYANTO)
+
+        [ENHANCEMENTS]
+
+        - Add return_stats option to ta_{mb,}wrap.
+
+
 0.09    2013-05-17 (SHARYANTO)
 
         [BUG FIXES]
