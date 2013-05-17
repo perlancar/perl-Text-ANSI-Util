@@ -1,5 +1,13 @@
 Revision history for Text-ANSI-Util
 
+0.09    2013-05-17 (SHARYANTO)
+
+        [BUG FIXES]
+
+        - ta_{mb,}wrap(): truncated long word did not retain color at the last
+          line.
+
+
 0.08    2013-04-19 (SHARYANTO)
 
         [ENHANCEMENTS]
