@@ -344,7 +344,7 @@ sub _ta_wrap {
                     $j++;
                     # most words shouldn't be that long
                     if ($termw <= $width-$sliw) {
-                        push @words , $term;
+                        push @words , $c . $term;
                         push @wordsw, $termw;
                         last;
                     }
