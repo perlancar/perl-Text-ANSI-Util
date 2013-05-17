@@ -146,6 +146,10 @@ subtest "ta_wrap" => sub {
     # XXX fli opt
     # XXX sli deduced
     # XXX pad opt
+
+    $res = ta_wrap("12345 123", 10, {return_stats=>1});
+    is_deeply($res, ["12345 123", {max_word_width=>5, min_word_width=>3}],
+              "opt return_stats");
 };
 
 subtest "ta_trunc" => sub {

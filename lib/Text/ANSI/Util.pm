@@ -238,6 +238,8 @@ sub _ta_wrap {
     #use Data::Dump::Color; my @d; for (0..$#terms) { push @d, {type=>$termst[$_], term=>$terms[$_], pterm=>$pterms[$_], termc=>$termsc[$_], termw=>$termsw[$_], } } dd \@d;
     #return;
 
+    my ($maxww, $minww);
+
     # now we perform wrapping
 
     my @res;
@@ -384,6 +386,10 @@ sub _ta_wrap {
                 for my $word (@words) {
                     my $wordw = shift @wordsw;
                     #say "D:x=$x word=$word wordw=$wordw line_has_word=$line_has_word width=$width";
+
+                    $maxww = $wordw if !defined($maxww) || $maxww < $wordw;
+                    $minww = $wordw if !defined($minww) || $minww > $wordw;
+
                     if ($x + ($line_has_word ? 1:0) + $wordw <= $width) {
                         if ($line_has_word) {
                             push @res, " ";
@@ -408,7 +414,14 @@ sub _ta_wrap {
         push @res, " " x ($width-$x) if $line_has_word && $pad;
     }
 
-    join "", @res;
+    if ($opts->{return_stats}) {
+        return [join("", @res), {
+            max_word_width => $maxww,
+            min_word_width => $minww,
+        }];
+    } else {
+        return join("", @res);
+    }
 }
 
 sub ta_wrap {
@@ -878,6 +891,12 @@ First line indent. See Text::WideChar::Util for more details.
 
 If set to true, will pad each line to C<$width>. This is convenient if you need
 the lines padded, saves calls to ta_pad().
+
+=item * return_stats => BOOL (default: 0)
+
+If set to true, then instead of returning the wrapped string, function will
+return C<< [$wrapped, $stats] >> where C<$stats> is a hash containing some
+information like C<max_word_width>, C<min_word_width>.
 
 =back
 
