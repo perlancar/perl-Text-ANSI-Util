@@ -131,6 +131,11 @@ subtest "ta_wrap" => sub {
     is($res, $cres, "truncate long word 2")
         or diag dump([split /^/, $cres], [split /^/, $res]);
 
+    $res  = ta_wrap("\e[1m12345678901234\e[0m", 10);
+    $cres = "\e[1m1234567890\e[0m\n\e[1m1234\e[0m";
+    is($res, $cres, "truncate long word 3 (broken in v0.08)")
+        or diag dump([split /^/, $cres], [split /^/, $res]);
+
     $res  = ta_wrap("x\n\e[1m\nx", 10);
     $cres = "x\n\n\e[1mx";
     is($res, $cres, "color code in parabreak")
