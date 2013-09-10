@@ -1,5 +1,12 @@
 Revision history for Text-ANSI-Util
 
+0.11    2013-09-10 (SHARYANTO)
+
+        - Replace Text::CharWidth's mbswidth() with Text::WideChar::Util's
+          mbswidth(), which in turn uses Unicode::GCString. It's about 2.5x
+          slower but more proper and builds on my Windows installation.
+
+
 0.10    2013-05-17 (SHARYANTO)
 
         [ENHANCEMENTS]

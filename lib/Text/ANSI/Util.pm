@@ -7,8 +7,7 @@ use utf8;
 use warnings;
 
 use List::Util qw(min max);
-use Text::CharWidth qw(mbswidth);
-use Text::WideChar::Util 0.04 qw(mbtrunc);
+use Text::WideChar::Util 0.07 qw(mbswidth mbtrunc);
 
 require Exporter;
 our @ISA       = qw(Exporter);
@@ -755,7 +754,7 @@ sub ta_add_color_resets {
  say ta_mbtrunc(...);
 
  # highlight the first occurence of some string within text
- say ta_highlight("some text", "ome", "\x[7m\x[31m");
+ say ta_highlight("some text", "ome", "\e[7m\e[31m");
 
  # ditto, but highlight all occurrences
  say ta_highlight_all(...);
@@ -900,18 +899,18 @@ information like C<max_word_width>, C<min_word_width>.
 
 =back
 
-Performance: ~750/s on my Core i5-2400 3.1GHz desktop for a ~1KB of text (with
-zero to moderate amount of color codes). As a comparison, Text::WideChar::Util's
-wrap() can do about 3100/s.
+Performance: ~500/s on my Core i5 1.7GHz laptop for a ~1KB of text (with zero to
+moderate amount of color codes). As a comparison, Text::WideChar::Util's wrap()
+can do about 2000/s.
 
 =head2 ta_mbwrap($text, $width, \%opts) => STR
 
 Like ta_wrap(), but it uses ta_mbswidth() instead of ta_length(), so it can
 handle wide characters.
 
-Performance: ~650/s on my Core i5-2400 3.1GHz desktop for a ~1KB of text (with
-zero to moderate amount of color codes). As a comparison, Text::WideChar::Util's
-mbwrap() can do about 2300/s.
+Performance: ~300/s on my Core i5 1.7GHz laptop for a ~1KB of text (with zero to
+moderate amount of color codes). As a comparison, Text::WideChar::Util's
+mbwrap() can do about 650/s.
 
 =head2 ta_add_color_resets(@text) => LIST
 
@@ -987,9 +986,6 @@ care not to mess up existing colors.
 
 C<$needle> can be a string or a Regexp object.
 
-Performance: ~ 20k/s on my Core i5-2400 3.1GHz desktop for a ~ 1KB of text and a
-needle of length ~ 7.
-
 Implementation note: to not mess up colors, we save up all color codes from the
 last reset (C<\e[0m>) before inserting the highlight color + highlight text.
 Then we issue C<\e[0m> and the saved up color code to return back to the color
@@ -999,9 +995,6 @@ in ta_add_color_resets().
 =head2 ta_highlight_all($text, $needle, $color) => STR
 
 Like ta_highlight(), but highlight all occurences instead of only the first.
-
-Performance: ~ 4k/s on my Core i5-2400 3.1GHz desktop for a ~ 1KB of text and a
-needle of length ~ 7 and number of occurences ~ 13.
 
 
 =head1 FAQ
