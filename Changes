@@ -1,5 +1,11 @@
 Revision history for Text-ANSI-Util
 
+0.12    2013-10-29 (SHARYANTO)
+
+        - No functional changes. Rebuild to resolve 'nested encoding' problem
+          causing MetaCPAN to fail to index the dist (thanks Shantanu Bhadoria).
+
+
 0.11    2013-09-10 (SHARYANTO)
 
         - Replace Text::CharWidth's mbswidth() with Text::WideChar::Util's

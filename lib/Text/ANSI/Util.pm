@@ -699,8 +699,6 @@ sub ta_add_color_resets {
 1;
 # ABSTRACT: Routines for text containing ANSI escape codes
 
-=encoding utf8
-
 =head1 SYNOPSIS
 
  use Text::ANSI::Util qw(
