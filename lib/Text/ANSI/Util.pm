@@ -455,8 +455,14 @@ sub _ta_wrap {
                         while (1) {
                             if ($wordt eq 'c') {
                                 # a CJK word can be line-broken
-                                my $res = ta_mbtrunc($word, $width-$x, 1);
-                                push @res, $res->[0];
+                                my $res;
+                                if ($ws_before) {
+                                    $res = ta_mbtrunc($word, $width-$x-1, 1);
+                                    push @res, " ", $res->[0];
+                                } else {
+                                    $res = ta_mbtrunc($word, $width-$x, 1);
+                                    push @res, $res->[0];
+                                }
                                 #say "D:truncated CJK word: $word (".length($word)."), ".($width-$x)." -> $res->[0] (".length($res->[0]).") & $res->[1], remaining=$res->[3] (".length($res->[3]).")";
                                 $word = $res->[3];
                                 $wordw = _ta_mbswidth0($res->[3]);
