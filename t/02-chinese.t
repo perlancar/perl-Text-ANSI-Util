@@ -54,6 +54,15 @@ subtest "ta_mbwrap" => sub {
     is($res, $cres)
         or diag dump([split /^/, $cres], [split /^/, $res]);
 
+    $res  = ta_mbwrap("\e[31m啊啊啊啊啊啊啊啊啊啊啊啊啊\e[0m", 11);
+    $cres = join("",
+                 "\e[31m啊啊啊啊啊\e[0m\n",
+                 "\e[31m啊啊啊啊啊\e[0m\n",
+                 "\e[31m啊啊啊\e[0m",
+             );
+    is($res, $cres, "long CJK word")
+        or diag dump([split /^/, $cres], [split /^/, $res]);
+
     # XXX actually there's still a bug, whitespace after 'mau' is missing, i'll
     # leave it at that ftm.
     $res  = ta_mbwrap("aku mau \e[31m吃饭吃饭吃饭吃饭\e[0m kuingat kamu", 15);
