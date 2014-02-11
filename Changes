@@ -1,5 +1,10 @@
 Revision history for Text-ANSI-Util
 
+0.13    2014-02-11 (SHARYANTO)
+
+        - ta_mbwrap(): Add support for wrapping Chinese/CJK text.
+
+
 0.12    2013-10-29 (SHARYANTO)
 
         - No functional changes. Rebuild to resolve 'nested encoding' problem
