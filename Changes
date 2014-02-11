@@ -1,5 +1,13 @@
 Revision history for Text-ANSI-Util
 
+0.15    2014-02-11 (SHARYANTO)
+
+        [BUG FIXES]
+
+        - ta_mbwrap(): Fix small wrapping bug (whitespace before line-broken CJK
+          word was omitted).
+
+
 0.14    2014-02-11 (SHARYANTO)
 
         [BUG FIXES]
