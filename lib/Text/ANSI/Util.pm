@@ -888,7 +888,7 @@ Return true if C<$text> contains ANSI escape codes, false otherwise.
 =head2 ta_length($text) => INT
 
 Count the number of characters in $text, while ignoring ANSI escape codes.
-Equivalent to C<< length(ta_strip($text) >>. See also: ta_mbswidth().
+Equivalent to C<< length(ta_strip($text)) >>. See also: ta_mbswidth().
 
 =head2 ta_length_height($text) => [INT, INT]
 
@@ -898,22 +898,17 @@ ta_length_height("foobar\nb\n") >> gives [6, 3].
 =head2 ta_mbswidth($text) => INT
 
 Return visual width of C<$text> (in number of columns) if printed on terminal.
-Equivalent to C<< Text::CharWidth::mbswidth(ta_strip($text)) >>. This function
-can be used e.g. in making sure that your text aligns vertically when output to
-the terminal in tabular/table format.
+Equivalent to C<< Text::WideChar::Util::mbswidth(ta_strip($text)) >>. This
+function can be used e.g. in making sure that your text aligns vertically when
+output to the terminal in tabular/table format.
 
-Note: C<mbswidth()> handles C<\0> correctly (regard it as having zero width) but
-currently does not handle control characters like C<\n>, C<\t>, C<\b>, C<\r>,
-etc well (they are just counted as having -1). So make sure that your text does
-not contain those characters.
-
-But at least ta_mbswidth() handles multiline text correctly, e.g.: C<<
+Note that C<ta_mbswidth()> handles multiline text correctly, e.g.: C<<
 ta_mbswidth("foo\nbarbaz") >> gives 6 instead of 3-1+8 = 8. It splits the input
 text first against C<< /\r?\n/ >>.
 
 =head2 ta_mbswidth_height($text) => [INT, INT]
 
-Like ta_mbswidth(), but also gives height (number of lines). For example, C<<
+Like C<ta_mbswidth()>, but also gives height (number of lines). For example, C<<
 ta_mbswidth_height("西爪哇\nb\n") >> gives [6, 3].
 
 =head2 ta_strip($text) => STR
@@ -922,7 +917,7 @@ Strip ANSI escape codes from C<$text>, returning the stripped text.
 
 =head2 ta_extract_codes($text) => STR
 
-This is the opposite of ta_strip(), return only the ANSI codes in C<$text>.
+This is the opposite of C<ta_strip()>, return only the ANSI codes in C<$text>.
 
 =head2 ta_split_codes($text) => LIST
 
@@ -946,8 +941,9 @@ so you can do something like:
 
 =head2 ta_split_codes_single($text) => LIST
 
-Like ta_split_codes() but each ANSI escape code is split separately, instead of
-grouped together.
+Like C<ta_split_codes()> but each ANSI escape code is split separately, instead
+of grouped together. This routine is currently used internally e.g. for
+C<ta_mbwrap()> and C<ta_highlight()> to trace color reset/replay codes.
 
 =head2 ta_wrap($text, $width, \%opts) => STR
 
