@@ -7,7 +7,7 @@ use utf8;
 use warnings;
 
 use List::Util qw(min max);
-use Text::WideChar::Util 0.07 qw(mbswidth mbtrunc);
+use Text::WideChar::Util 0.10 qw(mbswidth mbtrunc);
 
 require Exporter;
 our @ISA       = qw(Exporter);
@@ -117,32 +117,59 @@ sub _ta_wrap {
     # dealing with ANSI codes by splitting codes first (to easily do color
     # resets/replays), then grouping into words and paras, then doing wrapping.
 
-    my @termst; # store term type, 's' (spaces), 'w' (word), or 'p' (parabreak)
-    my @terms;  # store the text (w/ codes), for ws only store the codes
+    my @termst; # store term type, 's' (spaces), 'w' (word), 'c' (cjk word) or
+                # 'p' (parabreak)
+    my @terms;  # store the text (w/ codes); for ws, only store the codes
     my @pterms; # store the plaintext ver, but only for ws to check parabreak
     my @termsw; # store width of each term, only for non-ws
     my @termsc; # store color replay code
     {
         my @ch = ta_split_codes_single($text);
         my $crcode = ""; # code for color replay to be put at the start of line
-        my $term     = '';
-        my $pterm    = '';
-        my $was_word = 0;
-        my $was_ws   = 0;
+        my $term      = '';
+        my $pterm     = '';
+        my $prev_type = '';
         while (my ($pt, $c) = splice(@ch, 0, 2)) {
             #use Data::Dump; print "D:chunk: "; dd [$pt, $c];
-            my @s = $pt =~ /(\S+|\s+)/gos;
+
+            # split into (CJK and non-CJK) words and spaces.
+
+            my @s; # (WORD1, TYPE, ...) where type is 's' for space, 'c' for
+                   # CJK word, or 'w' for non-CJK word
+            while ($pt =~ /($Text::WideChar::Util::re_cjk+)|(\S+)|(\s+)/gox) {
+                if ($1) {
+                    push @s, $1, 'c';
+                } elsif ($3) {
+                    push @s, $3, 's';
+                } else {
+                    my $pt2 = $2;
+                    while ($pt2 =~ /($Text::WideChar::Util::re_cjk_class+)|
+                                    ($Text::WideChar::Util::re_cjk_negclass+)/gox) {
+                        if ($1) {
+                            push @s, $1, 'c';
+                        } else {
+                            push @s, $2, 'w';
+                        }
+                    }
+                }
+            }
+
+            #use Data::Dump; say "D:s=",Data::Dump::dump(\@s);
+
             my $only_code = 1 if !@s;
-            while ($only_code || defined(my $s = shift @s)) {
+            while (1) {
+                my ($s, $s_type) = splice @s, 0, 2;
+                $s_type //= '';
+                last unless $only_code || defined($s);
                 # empty text, only code
                 if ($only_code) {
                     $s = "";
-                    $term .= $c;
+                    $term .= $c if defined $c;
                 }
-                #say "D:s=[$s]  was_ws=$was_ws  was_word=$was_word  \@ch=",~~@ch,"  \@s=",~~@s;
+                #say "D:s=[$s]  prev_type=$prev_type \@ch=",~~@ch,"  \@s=",~~@s;
 
-                if ($s =~ /\S/) {
-                    if ($was_ws) {
+                if ($s_type && $s_type ne 's') {
+                    if ($prev_type eq 's') {
                         #say "D:found word, completed previous ws [$term]";
                         push @termst, 's';
                         push @terms , $term;
@@ -151,22 +178,30 @@ sub _ta_wrap {
                         push @termsc, $crcode;
                         # start new word
                         $pterm = ''; $term = '';
+                    } elsif ($prev_type && $prev_type ne $s_type) {
+                        #say "D:found a ".($s_type eq 'c' ? 'CJK':'non-CJK')." word, completed previous ".($prev_type eq 'c' ? 'CJK':'non-CJK')." word [$term]";
+                        push @termst, $prev_type;
+                        push @terms , $term;
+                        push @pterms, $pterm;
+                        push @termsw, $is_mb ? mbswidth($pterm):length($pterm);
+                        push @termsc, $crcode;
+                        # start new word
+                        $pterm = ''; $term = '';
                     }
                     $pterm .= $s;
                     $term  .= $s; $term .= $c if defined($c) && !@s;
                     if (!@s && !@ch) {
                         #say "D:complete word because this is the last token";
-                        push @termst, 'w';
+                        push @termst, $s_type;
                         push @terms , $term;
                         push @pterms, "";
                         push @termsw, $is_mb ? mbswidth($pterm):length($pterm);
                         push @termsc, $crcode;
                     }
-                    $was_ws = 0; $was_word = 1;
                 } elsif (length($s)) {
-                    if ($was_word) {
+                    if ($prev_type ne 's') {
                         #say "D:found ws, completed previous word [$term]";
-                        push @termst, 'w';
+                        push @termst, $prev_type;
                         push @terms , $term;
                         push @pterms, "";
                         push @termsw, $is_mb ? mbswidth($pterm):length($pterm);
@@ -184,8 +219,8 @@ sub _ta_wrap {
                         push @termsw, undef;
                         push @termsc, $crcode;
                     }
-                    $was_ws = 1; $was_word = 0;
                 }
+                $prev_type = $s_type;
 
                 if (!@s) {
                     if (defined($c) && $c =~ /m\z/) {
@@ -237,6 +272,12 @@ sub _ta_wrap {
     #use Data::Dump::Color; my @d; for (0..$#terms) { push @d, {type=>$termst[$_], term=>$terms[$_], pterm=>$pterms[$_], termc=>$termsc[$_], termw=>$termsw[$_], } } dd \@d;
     #return;
 
+    #use Data::Dump; say "D:termst=".Data::Dump::dump(\@termst);
+    #use Data::Dump; say "D:terms =".Data::Dump::dump(\@terms);
+    #use Data::Dump; say "D:pterms=".Data::Dump::dump(\@pterms);
+    #use Data::Dump; say "D:termsw=".Data::Dump::dump(\@termsw);
+    #use Data::Dump; say "D:termsc=".Data::Dump::dump(\@termsc);
+
     my ($maxww, $minww);
 
     # now we perform wrapping
@@ -255,9 +296,11 @@ sub _ta_wrap {
         my ($fli, $sli, $fliw, $sliw);
         my $is_parastart = 1;
         my $line_has_word = 0;
+        my ($termt, $prev_t);
       TERM:
         for my $i (0..$#terms) {
-            my $termt = $termst[$i];
+            $prev_t = $termt if $i;
+            $termt = $termst[$i];
             my $term  = $terms[$i];
             my $pterm = $pterms[$i];
             my $termw = $termsw[$i];
@@ -335,18 +378,24 @@ sub _ta_wrap {
                 }
             }
 
-            if ($termt eq 'w') {
+            if ($termt ne 's') {
                 # we need to chop long words
                 my @words;
                 my @wordsw;
+                my @wordst; # c if cjk, w if not
+                my @wordswsb; # whether there are ws before the word
                 my $j = 0;
                 my $c = ""; # see below for explanation
                 while (1) {
                     $j++;
-                    # most words shouldn't be that long
-                    if ($termw <= $width-$sliw) {
-                        push @words , $c . $term;
-                        push @wordsw, $termw;
+                    # most words shouldn't be that long. and we don't need to
+                    # truncate long CJK word first here because it will get
+                    # truncated later.
+                    if ($termw <= $width-$sliw || $termt eq 'c') {
+                        push @words   , $c . $term;
+                        push @wordsw  , $termw;
+                        push @wordst  , $termt;
+                        push @wordswsb, ($prev_t && $prev_t eq 's')?1:0;
                         last;
                     }
                     #use Data::Dump; print "D:truncating long word "; dd $term;
@@ -374,30 +423,45 @@ sub _ta_wrap {
                     $c .= ta_extract_codes(substr($term, 0, $res->[2]));
                     #use Data::Dump; print "D:truncated word is "; dd $tword;
 
-                    push @words , $tword;
-                    push @wordsw, $twordw;
+                    push @words   , $tword;
+                    push @wordsw  , $twordw;
+                    push @wordst  , $termt;
+                    push @wordswsb, $j == 1 ? (($prev_t && $prev_t eq 's')?1:0) : 0;
                     $term  = substr($term, $res->[2]);
                     $termw = $is_mb ? _ta_mbswidth0($term) : ta_length($term);
                 }
 
-                #use Data::Dump; print "D:words="; dd \@words; print "D:wordsw="; dd \@wordsw;
+                #use Data::Dump; print "D:words="; dd \@words; print "D:wordsw="; dd \@wordsw; print "D:wordswsb="; dd \@wordswsb;
+
                 # the core of the wrapping algo
                 for my $word (@words) {
                     my $wordw = shift @wordsw;
-                    #say "D:x=$x word=$word wordw=$wordw line_has_word=$line_has_word width=$width";
+                    my $wordt = shift @wordst;
+                    my $ws_before = shift @wordswsb;
+                    #say "D:x=$x word=$word wordw=$wordw wordt=$wordt ws_before=$ws_before line_has_word=$line_has_word width=$width";
 
                     $maxww = $wordw if !defined($maxww) || $maxww < $wordw;
                     $minww = $wordw if !defined($minww) || $minww > $wordw;
 
                     if ($x + ($line_has_word ? 1:0) + $wordw <= $width) {
-                        if ($line_has_word) {
+                        if ($line_has_word && $ws_before) {
                             push @res, " ";
                             $x++;
                         }
                         push @res, $word;
                         $x += $wordw;
                     } else {
-                        push @res, "\e[0m" if $crcode;
+                        # line break
+                        if ($wordt eq 'c') {
+                            # a CJK word can be line-broken
+                            my $res = ta_mbtrunc($word, $width-$x, 1);
+                            push @res, $res->[0];
+                            #say "D:truncated CJK word: $word (".length($word)."), ".($width-$x)." -> $res->[0] (".length($res->[0]).") & $res->[1], remaining=$res->[3] (".length($res->[3]).")";
+                            $word = $res->[3];
+                            $wordw = _ta_mbswidth0($res->[3]);
+                        } else {
+                            push @res, "\e[0m" if $crcode;
+                        }
                         push @res, " " x ($width-$x) if $pad;
                         push @res, "\n";
                         push @res, $crcode;
@@ -467,46 +531,60 @@ sub ta_mbpad {
 }
 
 sub _ta_trunc {
-    my ($is_mb, $text, $width, $return_width) = @_;
+    my ($is_mb, $text, $width, $return_extra) = @_;
 
-    # return_width (undocumented): if set to 1, will return [truncated_text,
-    # visual width, length(chars) up to truncation point]
+    # return_extra (undocumented): if set to 1, will return [truncated_text,
+    # visual width, length(chars) up to truncation point, rest of the text not
+    # included]
 
     my $w = $is_mb ? _ta_mbswidth0($text) : ta_length($text);
     if ($w <= $width) {
-        return $return_width ? [$text, $w, length($text)] : $text;
+        return $return_extra ? [$text, $w, length($text), ''] : $text;
     }
     my @p = ta_split_codes($text);
     my @res;
     my $append = 1; # whether we should add more text
+    my $code4rest = '';
+    my $rest = '';
     $w = 0;
     my $c = 0;
+    #use Data::Dump; dd \@p;
     while (my ($t, $ansi) = splice @p, 0, 2) {
+        #say "D: t=<$t>, \@p=", ~~@p, ", code4rest=<$code4rest>, rest=<$rest>";
         if ($append) {
             my $tw = $is_mb ? mbswidth($t) : length($t);
+            #say "D: tw=$tw";
             if ($w+$tw <= $width) {
                 push @res, $t;
                 $w += $tw;
                 $c += length($t);
                 $append = 0 if $w == $width;
+                #say "D:end1" unless $append;
             } else {
                 my $tres = $is_mb ?
                     mbtrunc($t, $width-$w, 1) :
                         [substr($t, 0, $width-$w), $width-$w, $width-$w];
+                #use Data::Dump; dd $tres;
                 push @res, $tres->[0];
                 $w += $tres->[1];
                 $c += $tres->[2];
+                $rest = substr($t, $tres->[2]);
                 $append = 0;
+                #say "D:end2";
             }
+        } else {
+            $rest .= $t;
         }
         if (defined $ansi) {
             push @res, $ansi;
             $c += length($ansi) if $append;
+            $code4rest .= $ansi if $append;
+            $rest .= $ansi unless $append;
         }
     }
 
-    if ($return_width) {
-        return [join("", @res), $w, $c];
+    if ($return_extra) {
+        return [join("", @res), $w, $c, $code4rest . $rest];
     } else {
         return join("", @res);
     }

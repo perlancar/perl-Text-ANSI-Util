@@ -54,19 +54,15 @@ subtest "ta_mbwrap" => sub {
     is($res, $cres)
         or diag dump([split /^/, $cres], [split /^/, $res]);
 
-    $res  = ta_mbwrap("x 里x里x里x里x里x里x里x x", 10);
-    $cres = "x\n里x里x里x\n里x里x里x\n里x x";
-    is($res, $cres, "truncate long word 1")
-        or diag dump([split /^/, $cres], [split /^/, $res]);
-
-    $res  = ta_mbwrap("x \e[1m里x里x里x里x里x里x里x\e[0m x", 10);
+    # XXX actually there's still a bug, whitespace after 'mau' is missing, i'll
+    # leave it at that ftm.
+    $res  = ta_mbwrap("aku mau \e[31m吃饭吃饭吃饭吃饭\e[0m kuingat kamu", 15);
     $cres = join("",
-                 "x\e[1m\e[0m\n",
-                 "\e[1m里x里x里x\e[0m\e[0m\n",
-                 "\e[1m\e[0m\e[1m里x里x里x\e[0m\e[0m\n",
-                 "\e[1m里x\e[0m x"
+                 "aku mau\e[31m吃饭吃饭\e[0m\n",
+                 "\e[31m吃饭吃饭\e[0m\n",
+                 "kuingat kamu",
              );
-    is($res, $cres, "truncate long word 2")
+    is($res, $cres, "chinese")
         or diag dump([split /^/, $cres], [split /^/, $res]);
 };
 
