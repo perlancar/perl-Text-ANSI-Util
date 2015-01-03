@@ -1101,23 +1101,6 @@ Example:
  ta_highlight($text, qr/\b(foo)\b/i, color("bold red"));
 
 
-=head1 TODOS
-
-=over
-
-=item * ta_split($re, $text)
-
-=item * ta_match($re, $text)
-
-Regex search.
-
-=item * ta_replace($re, $str, $text) (and ta_replace_all)
-
-Regex substitution.
-
-=back
-
-
 =head1 SEE ALSO
 
 L<Term::ANSIColor>
