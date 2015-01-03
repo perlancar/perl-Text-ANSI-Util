@@ -1,5 +1,12 @@
 Revision history for Text-ANSI-Util
 
+0.16    2015-01-03 (PERLANCAR)
+
+	- No functional changes.
+
+	- Rebuild (Generate TODO.md).
+
+
 0.15    2014-02-11 (SHARYANTO)
 
         [BUG FIXES]
