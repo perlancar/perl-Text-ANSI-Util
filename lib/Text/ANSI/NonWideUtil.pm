@@ -21,6 +21,7 @@ our @EXPORT_OK = qw(
                        ta_split_codes
                        ta_split_codes_single
                        ta_strip
+                       ta_substr
                        ta_trunc
                        ta_wrap
                );

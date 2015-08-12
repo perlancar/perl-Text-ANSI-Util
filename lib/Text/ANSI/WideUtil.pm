@@ -13,6 +13,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(
                        ta_mbpad
+                       ta_mbsubstr
                        ta_mbswidth
                        ta_mbswidth_height
                        ta_mbtrunc

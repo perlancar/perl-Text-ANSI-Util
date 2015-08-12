@@ -26,6 +26,7 @@ our @EXPORT_OK = qw(
                        ta_length
                        ta_length_height
                        ta_mbpad
+                       ta_mbsubstr
                        ta_mbswidth
                        ta_mbswidth_height
                        ta_mbtrunc
@@ -34,6 +35,7 @@ our @EXPORT_OK = qw(
                        ta_split_codes
                        ta_split_codes_single
                        ta_strip
+                       ta_substr
                        ta_trunc
                        ta_wrap
                );
@@ -52,9 +54,9 @@ our $re = $Text::ANSI::BaseUtil::re;
 
  use Text::ANSI::Util qw(
      ta_add_color_resets
-     ta_detect ta_highlight ta_highlight_all ta_length ta_mbpad ta_mbswidth
+     ta_detect ta_highlight ta_highlight_all ta_length ta_mbpad ta_mbsubstr ta_mbswidth
      ta_mbswidth_height ta_mbwrap ta_pad ta_split_codes ta_split_codes_single
-     ta_strip ta_wrap);
+     ta_strip ta_wrap ta_substr);
 
  # detect whether text has ANSI escape codes?
  say ta_detect("red");       # => false
@@ -105,6 +107,16 @@ our $re = $Text::ANSI::BaseUtil::re;
 
  # ditto, but highlight all occurrences
  say ta_highlight_all(...);
+
+ # get substring
+ my $substr = ta_substr("...", $pos, $len);
+ # ditto but with wide character support
+ my $substr = ta_mbsubstr("...", $pos, $len);
+
+ # return text but with substring replaced with replacement
+ say ta_substr("...", $pos, $len, $replacement);
+ # ditto but with wide character support
+ say ta_mbsubstr("...", $pos, $len, $replacement);
 
 
 =head1 DESCRIPTION
@@ -306,6 +318,12 @@ in ta_add_color_resets().
 
 Like ta_highlight(), but highlight all occurences instead of only the first.
 
+=head2 ta_substr($text, $pos, $len[ , $replacement ]) => STR
+
+A bit like Perl's C<substr()>. If C<$replacement> is not specified, will return
+the substring. If C<$replacement> is specified, will return $text with the
+substring replaced by C<$replacement>.
+
 =for END_BLOCK: pod_nonwide_functions
 
 =for BEGIN_BLOCK: pod_wide_functions
@@ -344,6 +362,10 @@ handle wide characters.
 Performance: ~300/s on my Core i5 1.7GHz laptop for a ~1KB of text (with zero to
 moderate amount of color codes). As a comparison, Text::WideChar::Util's
 mbwrap() can do about 650/s.
+
+=head2 ta_mbsubstr($text, $pos, $len[ , $replacement ]) => STR
+
+Like ta_substr(), but handles wide characters.
 
 =for END_BLOCK: pod_wide_functions
 

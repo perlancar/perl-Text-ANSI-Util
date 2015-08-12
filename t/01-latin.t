@@ -13,7 +13,9 @@ use Text::ANSI::Util qw(
                            ta_detect ta_length ta_length_height ta_pad
                            ta_split_codes ta_split_codes_single
                            ta_strip ta_trunc ta_wrap ta_highlight
-                           ta_highlight_all ta_extract_codes);
+                           ta_highlight_all ta_extract_codes
+                           ta_substr ta_mbsubstr
+                   );
 
 subtest "ta_detect" => sub {
     ok(!ta_detect("a"), 'neg 1');
@@ -190,6 +192,14 @@ subtest "ta_add_color_resets" => sub {
                "\e[31m\e[1mmerah\e[0m normal",
                "\e[0mnormale"]);
 };
+
+subtest "ta_substr" => sub {
+    diag dump(ta_substr("\e[31m1234\e[32m5678\e[0m", 2, 4, "foo"));
+    is(ta_substr("\e[31m1234\e[32m5678\e[0m", 2, 4), "\e[31m34\e[32m56\e[0m");
+    is(ta_substr("\e[31m1234\e[32m5678\e[0m", 2, 4, "foo"), "\e[31m12\e[32m\e[0mfoo\e[31m\e[32m78\e[0m");
+};
+
+# XXX test ta_mbsubstr (in 02-chinese.t)
 
 DONE_TESTING:
 done_testing();

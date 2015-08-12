@@ -765,6 +765,32 @@ sub ta_add_color_resets {
     @res;
 }
 
+sub _ta_substr {
+    my $is_mb = shift;
+    my $str   = shift;
+    my $pos   = shift;
+    my $len   = shift;
+
+    my $res1 = _ta_trunc($is_mb, $str, $pos, 1);
+    my $res2 = _ta_trunc($is_mb, $res1->[3], $len, 1);
+
+    if (@_) {
+        # left + replacement + right
+        return $res1->[0] . $_[0] . $res2->[3];
+    } else {
+        return $res2->[0];
+    }
+}
+
+sub ta_substr {
+    _ta_substr(0, @_);
+}
+
+sub ta_mbsubstr {
+    _ta_substr(1, @_);
+}
+
+
 1;
 # ABSTRACT: Base for Text::ANSI::{Util,NonWideUtil,WideUtil}
 
