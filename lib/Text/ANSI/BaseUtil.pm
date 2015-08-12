@@ -10,11 +10,8 @@ use warnings;
 use List::Util qw(min max);
 
 # used to find/strip escape codes from string
-our $re       = qr/
-                      #\e\[ (?: (\d+) ((?:;[^;]+?)*) )? ([\x40-\x7e])
-                      # without captures
-                      \e\[ (?: \d+ (?:;[^;]+?)* )? [\x40-\x7e]
-                  /osx;
+our $re       = qr/\e\[.+?m/s;
+our $re_mult  = qr/(?:\e\[.+?m)+/s;
 
 sub ta_detect {
     my $text = shift;
@@ -58,13 +55,13 @@ sub ta_strip {
 sub ta_extract_codes {
     my $text = shift;
     my $res = "";
-    $res .= $1 while $text =~ /((?:$re)+)/go;
+    $res .= $1 while $text =~ /($re_mult)/go;
     $res;
 }
 
 sub ta_split_codes {
     my $text = shift;
-    return split(/((?:$re)+)/o, $text);
+    return split(/($re_mult)/o, $text);
 }
 
 sub ta_split_codes_single {
