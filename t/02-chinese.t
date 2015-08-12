@@ -13,6 +13,9 @@ use Text::ANSI::Util qw(
                            ta_mbpad ta_mbswidth ta_mbswidth_height ta_mbtrunc
                            ta_mbwrap);
 
+plan skip_all => "Text::WideChar::Util not available"
+    unless eval { require Text::WideChar::Util; 1 };
+
 # check if chinese locale is supported, otherwise bail
 unless (POSIX::setlocale(&POSIX::LC_ALL, "zh_CN.utf8")) {
     plan skip_all => "Chinese locale not supported on this system";

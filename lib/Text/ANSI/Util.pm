@@ -1,13 +1,21 @@
 package Text::ANSI::Util;
 
+# DATE
+# VERSION
+
 use 5.010001;
-use locale;
 use strict;
-use utf8;
 use warnings;
 
 use List::Util qw(min max);
-use Text::WideChar::Util 0.10 qw(mbswidth mbtrunc);
+
+BEGIN {
+    eval {
+        require Text::WideChar::Util;
+        Text::WideChar::Util->import(qw(mbswidth mbtrunc));
+    };
+    warn if $@;
+}
 
 require Exporter;
 our @ISA       = qw(Exporter);
@@ -31,8 +39,6 @@ our @EXPORT_OK = qw(
                        ta_trunc
                        ta_wrap
                );
-
-# VERSION
 
 # used to find/strip escape codes from string
 our $re       = qr/
@@ -792,6 +798,8 @@ sub ta_add_color_resets {
 
 1;
 # ABSTRACT: Routines for text containing ANSI escape codes
+
+=encoding UTF-8
 
 =head1 SYNOPSIS
 
