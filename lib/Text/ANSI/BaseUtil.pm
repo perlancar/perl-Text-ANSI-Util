@@ -767,3 +767,5 @@ sub ta_add_color_resets {
 
 1;
 # ABSTRACT: Base for Text::ANSI::{Util,NonWideUtil,WideUtil}
+
+=for Pod::Coverage .+

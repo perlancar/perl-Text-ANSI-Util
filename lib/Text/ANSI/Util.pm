@@ -38,7 +38,7 @@ our @EXPORT_OK = qw(
                        ta_wrap
                );
 
-use Text::ANSI::BaseUtil;
+use Text::ANSI::BaseUtil ();
 
 our $re = $Text::ANSI::BaseUtil::re;
 *{$_} = \&{"Text::ANSI::BaseUtil::$_"} for @EXPORT_OK;
@@ -142,6 +142,8 @@ this should not be a problem with most real-world text out there.
 
 =head1 FUNCTIONS
 
+=for BEGIN_BLOCK: pod_nonwide_functions
+
 =head2 ta_detect($text) => BOOL
 
 Return true if C<$text> contains ANSI escape codes, false otherwise.
@@ -155,22 +157,6 @@ Equivalent to C<< length(ta_strip($text)) >>. See also: ta_mbswidth().
 
 Like ta_length(), but also gives height (number of lines). For example, C<<
 ta_length_height("foobar\nb\n") >> gives [6, 3].
-
-=head2 ta_mbswidth($text) => INT
-
-Return visual width of C<$text> (in number of columns) if printed on terminal.
-Equivalent to C<< Text::WideChar::Util::mbswidth(ta_strip($text)) >>. This
-function can be used e.g. in making sure that your text aligns vertically when
-output to the terminal in tabular/table format.
-
-Note that C<ta_mbswidth()> handles multiline text correctly, e.g.: C<<
-ta_mbswidth("foo\nbarbaz") >> gives 6 instead of 3-1+8 = 8. It splits the input
-text first against C<< /\r?\n/ >>.
-
-=head2 ta_mbswidth_height($text) => [INT, INT]
-
-Like C<ta_mbswidth()>, but also gives height (number of lines). For example, C<<
-ta_mbswidth_height("西爪哇\nb\n") >> gives [6, 3].
 
 =head2 ta_strip($text) => STR
 
@@ -246,15 +232,6 @@ Performance: ~500/s on my Core i5 1.7GHz laptop for a ~1KB of text (with zero to
 moderate amount of color codes). As a comparison, Text::WideChar::Util's wrap()
 can do about 2000/s.
 
-=head2 ta_mbwrap($text, $width, \%opts) => STR
-
-Like ta_wrap(), but it uses ta_mbswidth() instead of ta_length(), so it can
-handle wide characters.
-
-Performance: ~300/s on my Core i5 1.7GHz laptop for a ~1KB of text (with zero to
-moderate amount of color codes). As a comparison, Text::WideChar::Util's
-mbwrap() can do about 650/s.
-
 =head2 ta_add_color_resets(@text) => LIST
 
 Make sure that a color reset command (add C<\e[0m>) to the end of each element
@@ -305,22 +282,12 @@ of 1 column.
 
 Does *not* handle multiline text; you can split text by C</\r?\n/> yourself.
 
-=head2 ta_mbpad($text, $width[, $which[, $padchar[, $truncate]]]) => STR
-
-Like ta_pad() but it uses ta_mbswidth() instead of ta_length(), so it can handle
-wide characters.
-
 =head2 ta_trunc($text, $width) => STR
 
 Truncate C<$text> to C<$width> columns while still including all the ANSI escape
 codes. This ensures that truncated text still reset colors, etc.
 
 Does *not* handle multiline text; you can split text by C</\r?\n/> yourself.
-
-=head2 ta_mbtrunc($text, $width) => STR
-
-Like ta_trunc() but it uses ta_mbswidth() instead of ta_length(), so it can
-handle wide characters.
 
 =head2 ta_highlight($text, $needle, $color) => STR
 
@@ -338,6 +305,47 @@ in ta_add_color_resets().
 =head2 ta_highlight_all($text, $needle, $color) => STR
 
 Like ta_highlight(), but highlight all occurences instead of only the first.
+
+=for END_BLOCK: pod_nonwide_functions
+
+=for BEGIN_BLOCK: pod_wide_functions
+
+=head2 ta_mbpad($text, $width[, $which[, $padchar[, $truncate]]]) => STR
+
+Like ta_pad() but it uses ta_mbswidth() instead of ta_length(), so it can handle
+wide characters.
+
+=head2 ta_mbtrunc($text, $width) => STR
+
+Like ta_trunc() but it uses ta_mbswidth() instead of ta_length(), so it can
+handle wide characters.
+
+=head2 ta_mbswidth($text) => INT
+
+Return visual width of C<$text> (in number of columns) if printed on terminal.
+Equivalent to C<< Text::WideChar::Util::mbswidth(ta_strip($text)) >>. This
+function can be used e.g. in making sure that your text aligns vertically when
+output to the terminal in tabular/table format.
+
+Note that C<ta_mbswidth()> handles multiline text correctly, e.g.: C<<
+ta_mbswidth("foo\nbarbaz") >> gives 6 instead of 3-1+8 = 8. It splits the input
+text first against C<< /\r?\n/ >>.
+
+=head2 ta_mbswidth_height($text) => [INT, INT]
+
+Like C<ta_mbswidth()>, but also gives height (number of lines). For example, C<<
+ta_mbswidth_height("西爪哇\nb\n") >> gives [6, 3].
+
+=head2 ta_mbwrap($text, $width, \%opts) => STR
+
+Like ta_wrap(), but it uses ta_mbswidth() instead of ta_length(), so it can
+handle wide characters.
+
+Performance: ~300/s on my Core i5 1.7GHz laptop for a ~1KB of text (with zero to
+moderate amount of color codes). As a comparison, Text::WideChar::Util's
+mbwrap() can do about 650/s.
+
+=for END_BLOCK: pod_wide_functions
 
 
 =head1 FAQ

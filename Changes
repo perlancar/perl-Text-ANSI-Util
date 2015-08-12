@@ -1,5 +1,14 @@
 Revision history for Text-ANSI-Util
 
+0.17    2015-08-12 (PERLANCAR)
+
+        - Make Text::WideChar::Util an optional prereq.
+
+        - Also provide Text::ANSI::WideUtil and the leaner
+          Text::ANSI::NonWideUtil (the latter doesn't load Unicode modules, use
+          this if you do not have Unicode/wide characters in your text).
+
+
 0.16    2015-01-03 (PERLANCAR)
 
 	- No functional changes.

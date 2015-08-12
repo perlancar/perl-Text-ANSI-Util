@@ -19,10 +19,14 @@ our @EXPORT_OK = qw(
                        ta_mbwrap
                );
 
-use Text::ANSI::BaseUtil;
+use Text::ANSI::BaseUtil ();
 
 our $re = $Text::ANSI::BaseUtil::re;
 *{$_} = \&{"Text::ANSI::BaseUtil::$_"} for @EXPORT_OK;
 
 1;
 # ABSTRACT: Routines for text containing ANSI escape codes (wide functions only)
+
+=head1 FUNCTIONS
+
+# INSERT_BLOCK: lib/Text/ANSI/Util.pm pod_wide_functions
