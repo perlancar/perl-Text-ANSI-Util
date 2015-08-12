@@ -1,5 +1,10 @@
 Revision history for Text-ANSI-Util
 
+0.18    2015-08-12 (PERLANCAR)
+
+	- Add functions: ta_substr, ta_mbsubstr.
+
+
 0.17    2015-08-12 (PERLANCAR)
 
         - Make Text::WideChar::Util an optional prereq.
