@@ -1,5 +1,24 @@
 Revision history for Text-ANSI-Util
 
+0.19    2015-08-13 (PERLANCAR)
+
+        - Adjust abstract and documentation. We now only deal with ANSI color
+          codes (SGR, \e[...m) and ignore non-color ANSI escape codes.
+
+        - [Bugfix] Add pruning of ANSI color codes so multiple replacement using
+          ta_substr() will not become increasingly slower due to proliferation
+          of unpruned color codes (due to ta_trunc()).
+
+        - [Bugfix] Make ta_wrap work without Text::WideChar::Util (previously,
+          ta_wrap always uses regex patterns from Text::WideChar::Util despite
+          $is_mb is 0).
+
+        - [Bugfix] Fix regex pattern for ANSI color codes (previous one was too
+          broad).
+
+        - Add (currently minimal) bench devscript.
+
+
 0.18    2015-08-12 (PERLANCAR)
 
 	- Add functions: ta_substr, ta_mbsubstr.

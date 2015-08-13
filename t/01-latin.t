@@ -196,7 +196,7 @@ subtest "ta_add_color_resets" => sub {
 subtest "ta_substr" => sub {
     diag dump(ta_substr("\e[31m1234\e[32m5678\e[0m", 2, 4, "foo"));
     is(ta_substr("\e[31m1234\e[32m5678\e[0m", 2, 4), "\e[31m34\e[32m56\e[0m");
-    is(ta_substr("\e[31m1234\e[32m5678\e[0m", 2, 4, "foo"), "\e[31m12\e[32m\e[0mfoo\e[31m\e[32m78\e[0m");
+    is(ta_substr("\e[31m1234\e[32m5678\e[0m", 2, 4, "foo"), "\e[31m12\e[0mfoo\e[31m\e[32m78\e[0m");
 };
 
 # XXX test ta_mbsubstr (in 02-chinese.t)
