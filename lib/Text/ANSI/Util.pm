@@ -46,7 +46,7 @@ our $re = $Text::ANSI::BaseUtil::re;
 *{$_} = \&{"Text::ANSI::BaseUtil::$_"} for @EXPORT_OK;
 
 1;
-# ABSTRACT: Routines for text containing ANSI escape codes
+# ABSTRACT: Routines for text containing ANSI color codes
 
 =encoding UTF-8
 
@@ -58,29 +58,29 @@ our $re = $Text::ANSI::BaseUtil::re;
      ta_mbswidth_height ta_mbwrap ta_pad ta_split_codes ta_split_codes_single
      ta_strip ta_wrap ta_substr);
 
- # detect whether text has ANSI escape codes?
+ # detect whether text has ANSI color codes?
  say ta_detect("red");       # => false
  say ta_detect("\e[31mred"); # => true
 
- # calculate length of text (excluding the ANSI escape codes)
+ # calculate length of text (excluding the ANSI color codes)
  say ta_length("red");       # => 3
  say ta_length("\e[31mred"); # => 3
 
  # calculate visual width of text if printed on terminal (can handle Unicode
- # wide characters and exclude the ANSI escape codes)
+ # wide characters and exclude the ANSI color codes)
  say ta_mbswidth("\e[31mred");  # => 3
  say ta_mbswidth("\e[31m红色"); # => 4
 
  # ditto, but also return the number of lines
  say ta_mbswidth_height("\e[31mred\n红色"); # => [4, 2]
 
- # strip ANSI escape codes
+ # strip ANSI color codes
  say ta_strip("\e[31mred"); # => "red"
 
- # split codes (ANSI codes are always on the even positions)
+ # split codes (ANSI color codes are always on the even positions)
  my @parts = ta_split_codes("\e[31mred"); # => ("", "\e[31m", "red")
 
- # wrap text to a certain column width, handle ANSI escape codes
+ # wrap text to a certain column width, handle ANSI color codes
  say ta_wrap("....", 40);
 
  # ditto, but handle wide characters
@@ -94,7 +94,7 @@ our $re = $Text::ANSI::BaseUtil::re;
  # ditto, but handle wide characters
  say ta_mbpad(...);
 
- # truncate text to a certain width while still passing ANSI escape codes
+ # truncate text to a certain width while still passing ANSI color codes
  use Term::ANSIColor;
  my $text = color("red")."red text".color("reset"); # => "\e[31mred text\e[0m"
  say ta_trunc($text, 5);                            # => "\e[31mred t\e[0m"
@@ -121,17 +121,16 @@ our $re = $Text::ANSI::BaseUtil::re;
 
 =head1 DESCRIPTION
 
-This module provides routines for dealing with text containing ANSI escape codes
-(mainly ANSI color codes).
+This module provides routines for dealing with text containing ANSI color codes
+(Select Graphic Rendition/SGR/C<\e[...m> codes).
 
 Current caveats:
 
 =over
 
-=item * All codes are assumed to have zero width
+=item * Other ANSI codes (non-color codes) are ignored
 
-This is true for color codes and some other codes, but there are also codes to
-alter cursor positions which means they can have negative or undefined width.
+These are codes like for altering cursor positions, etc.
 
 =item * Single-character CSI (control sequence introducer) currently ignored
 
@@ -144,10 +143,10 @@ is C<0xc2, 0x9b> (2 bytes).
 
 =item * Only color reset code \e[0m is recognized
 
-For simplicity, currently multiple SGR (select graphic rendition) parameters
-inside a single ANSI escape code is not parsed. This means that color reset code
-like C<\e[1;0m> or C<\e[31;47;0m> is not recognized, only C<\e[0m> is. I believe
-this should not be a problem with most real-world text out there.
+For simplicity, currently multiple SGR parameters inside a single ANSI color
+code is not parsed. This means that color reset code like C<\e[1;0m> or
+C<\e[31;47;0m> is not recognized, only C<\e[0m> is. I believe this should not be
+a problem with most real-world text out there.
 
 =back
 
@@ -158,11 +157,11 @@ this should not be a problem with most real-world text out there.
 
 =head2 ta_detect($text) => BOOL
 
-Return true if C<$text> contains ANSI escape codes, false otherwise.
+Return true if C<$text> contains ANSI color codes, false otherwise.
 
 =head2 ta_length($text) => INT
 
-Count the number of characters in $text, while ignoring ANSI escape codes.
+Count the number of characters in $text, while ignoring ANSI color codes.
 Equivalent to C<< length(ta_strip($text)) >>. See also: ta_mbswidth().
 
 =head2 ta_length_height($text) => [INT, INT]
@@ -172,7 +171,7 @@ ta_length_height("foobar\nb\n") >> gives [6, 3].
 
 =head2 ta_strip($text) => STR
 
-Strip ANSI escape codes from C<$text>, returning the stripped text.
+Strip ANSI color codes from C<$text>, returning the stripped text.
 
 =head2 ta_extract_codes($text) => STR
 
@@ -180,8 +179,8 @@ This is the opposite of C<ta_strip()>, return only the ANSI codes in C<$text>.
 
 =head2 ta_split_codes($text) => LIST
 
-Split C<$text> to a list containing alternating ANSI escape codes and text. ANSI
-escape codes are always on the second element, fourth, and so on. Example:
+Split C<$text> to a list containing alternating ANSI color codes and text. ANSI
+color codes are always on the second element, fourth, and so on. Example:
 
  ta_split_codes("");              # => ()
  ta_split_codes("a");             # => ("a")
@@ -200,13 +199,13 @@ so you can do something like:
 
 =head2 ta_split_codes_single($text) => LIST
 
-Like C<ta_split_codes()> but each ANSI escape code is split separately, instead
+Like C<ta_split_codes()> but each ANSI color code is split separately, instead
 of grouped together. This routine is currently used internally e.g. for
 C<ta_mbwrap()> and C<ta_highlight()> to trace color reset/replay codes.
 
 =head2 ta_wrap($text, $width, \%opts) => STR
 
-Like L<Text::WideChar::Util>'s wrap() except handles ANSI escape codes. Perform
+Like L<Text::WideChar::Util>'s wrap() except handles ANSI color codes. Perform
 color reset at the end of each line and a color replay at the start of
 subsequent line so the text is safe for combining in a multicolumn/tabular
 layout.
@@ -296,7 +295,7 @@ Does *not* handle multiline text; you can split text by C</\r?\n/> yourself.
 
 =head2 ta_trunc($text, $width) => STR
 
-Truncate C<$text> to C<$width> columns while still including all the ANSI escape
+Truncate C<$text> to C<$width> columns while still including all the ANSI color
 codes. This ensures that truncated text still reset colors, etc.
 
 Does *not* handle multiline text; you can split text by C</\r?\n/> yourself.
