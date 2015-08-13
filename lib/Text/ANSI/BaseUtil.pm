@@ -9,8 +9,8 @@ use warnings;
 
 use List::Util qw(min max);
 
-our $re       = qr/\e\[.+?m/s;
-our $re_mult  = qr/(?:\e\[.+?m)+/s;
+our $re       = qr/\e\[[0-9;]+m/s;
+our $re_mult  = qr/(?:\e\[[0-9;]+m)+/s;
 
 sub ta_detect {
     my $text = shift;
