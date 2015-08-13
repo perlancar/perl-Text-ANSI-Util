@@ -88,6 +88,14 @@ sub _ta_wrap {
     # dealing with ANSI codes by splitting codes first (to easily do color
     # resets/replays), then grouping into words and paras, then doing wrapping.
 
+    my $_re1 = $is_mb ?
+        qr/($Text::WideChar::Util::re_cjk+)|(\S+)|(\s+)/ :
+        qr/()(\S+)|(\s+)/;
+
+    my $_re2 = $is_mb ?
+        qr/($Text::WideChar::Util::re_cjk_class+)|
+           ($Text::WideChar::Util::re_cjk_negclass+)/x : undef;
+
     my @termst; # store term type, 's' (spaces), 'w' (word), 'c' (cjk word) or
                 # 'p' (parabreak)
     my @terms;  # store the text (w/ codes); for ws, only store the codes
@@ -107,20 +115,23 @@ sub _ta_wrap {
 
             my @s; # (WORD1, TYPE, ...) where type is 's' for space, 'c' for
                    # CJK word, or 'w' for non-CJK word
-            while ($pt =~ /($Text::WideChar::Util::re_cjk+)|(\S+)|(\s+)/gox) {
-                if ($1) {
+            while ($pt =~ /$_re1/g) {
+                if ($is_mb && $1) {
                     push @s, $1, 'c';
                 } elsif ($3) {
                     push @s, $3, 's';
                 } else {
-                    my $pt2 = $2;
-                    while ($pt2 =~ /($Text::WideChar::Util::re_cjk_class+)|
-                                    ($Text::WideChar::Util::re_cjk_negclass+)/gox) {
-                        if ($1) {
-                            push @s, $1, 'c';
-                        } else {
-                            push @s, $2, 'w';
+                    if ($is_mb) {
+                        my $pt2 = $2;
+                        while ($pt2 =~ /$_re2/g) {
+                            if ($1) {
+                                push @s, $1, 'c';
+                            } else {
+                                push @s, $2, 'w';
+                            }
                         }
+                    } else {
+                        push @s, $2, 'w';
                     }
                 }
             }
