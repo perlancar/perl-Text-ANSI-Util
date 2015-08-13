@@ -9,7 +9,6 @@ use warnings;
 
 use List::Util qw(min max);
 
-# used to find/strip escape codes from string
 our $re       = qr/\e\[.+?m/s;
 our $re_mult  = qr/(?:\e\[.+?m)+/s;
 
