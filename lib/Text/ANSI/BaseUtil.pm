@@ -539,8 +539,8 @@ sub _ta_trunc {
     if ($w <= $width) {
         return $return_extra ? [$text, $w, length($text), ''] : $text;
     }
-    my @p = ta_split_codes($text);
-    my @res;
+    my @p = ta_split_codes_single($text);
+    my $res = '';
     my $append = 1; # whether we should add more text
     my $code4rest = '';
     my $rest = '';
@@ -553,7 +553,7 @@ sub _ta_trunc {
             my $tw = $is_mb ? Text::WideChar::Util::mbswidth($t) : length($t);
             #say "D: tw=$tw";
             if ($w+$tw <= $width) {
-                push @res, $t;
+                $res .= $t;
                 $w += $tw;
                 $c += length($t);
                 $append = 0 if $w == $width;
@@ -563,7 +563,7 @@ sub _ta_trunc {
                     Text::WideChar::Util::mbtrunc($t, $width-$w, 1) :
                       [substr($t, 0, $width-$w), $width-$w, $width-$w];
                 #use Data::Dump; dd $tres;
-                push @res, $tres->[0];
+                $res .= $tres->[0];
                 $w += $tres->[1];
                 $c += $tres->[2];
                 $rest = substr($t, $tres->[2]);
@@ -574,18 +574,39 @@ sub _ta_trunc {
             $rest .= $t;
         }
         if (defined $ansi) {
-            push @res, $ansi;
-            $c += length($ansi) if $append;
-            $code4rest .= $ansi if $append;
-            $rest .= $ansi unless $append;
+            if ($append) {
+                if ($ansi eq "\e[0m") {
+                    #say "D:found color reset, resetting code4rest";
+                    $c = length($ansi);
+                    $code4rest = $ansi;
+                } else {
+                    $c += length($ansi);
+                    $code4rest .= $ansi;
+                }
+                $res .= $ansi;
+            } else {
+                $res .= $ansi;
+                $rest .= $ansi;
+            }
         }
     }
 
+    # ta_trunc/ta_mbtrunc currently adds unpruned color codes at the end of
+    # truncated string. pruned meaning strings of color codes right before reset
+    # code is removed, e.g. \e[1m\e[30m...\e[0m becomes \e[0m. you might want to
+    # prune the result of trunc using _ta_prune_codes.
+
     if ($return_extra) {
-        return [join("", @res), $w, $c, $code4rest . $rest];
+        return [$res, $w, $c, $code4rest . $rest];
     } else {
-        return join("", @res);
+        return $res;
     }
+}
+
+sub _ta_prune_codes {
+    my $text = shift;
+    $text =~ s/($re_mult)\e\[0m/\e\[0m/g;
+    $text;
 }
 
 sub ta_trunc {
@@ -783,9 +804,9 @@ sub _ta_substr {
 
     if (@_) {
         # left + replacement + right
-        return $res1->[0] . $_[0] . $res2->[3];
+        return _ta_prune_codes($res1->[0] . $_[0] . $res2->[3]);
     } else {
-        return $res2->[0];
+        return _ta_prune_codes($res2->[0]);
     }
 }
 
