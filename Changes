@@ -1,5 +1,12 @@
 Revision history for Text-ANSI-Util
 
+0.20    2015-08-20 (PERLANCAR)
+
+        - Split Text::ANSI::WideUtil to its own dist.
+
+        - Re-pass tests [RT#106535].
+
+
 0.19    2015-08-13 (PERLANCAR)
 
         - Adjust abstract and documentation. We now only deal with ANSI color
