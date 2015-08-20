@@ -1,5 +1,12 @@
 Revision history for Text-ANSI-Util
 
+0.21    2015-08-20 (PERLANCAR)
+
+	- No functional changes.
+
+	- [doc] Add some description and mention Text::ANSI::WideUtil.
+
+
 0.20    2015-08-20 (PERLANCAR)
 
         - Split Text::ANSI::WideUtil to its own dist.
