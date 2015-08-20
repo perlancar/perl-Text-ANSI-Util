@@ -46,7 +46,7 @@ our $re = $Text::ANSI::BaseUtil::re;
 *{$_} = \&{"Text::ANSI::BaseUtil::$_"} for @EXPORT_OK;
 
 1;
-# ABSTRACT: Routines for text containing ANSI color codes
+# ABSTRACT: (DEPRECATED) Routines for text containing ANSI color codes
 
 =encoding UTF-8
 
@@ -120,6 +120,13 @@ our $re = $Text::ANSI::BaseUtil::re;
 
 
 =head1 DESCRIPTION
+
+B<DEPRECATION NOTICE:> To keep dependencies stay slim, since 0.17 this module
+has been split into L<Text::ANSI::NonWideUtil> (for routines dealing with just
+ASCII characters, which does not depend on Unicode/wide-char libraries) and
+L<Text::ANSI::WideUtil> (for routines supporting Unicode/wide characters). It is
+advised that you use either one of the two, depending on your needs. This module
+might be removed in the future.
 
 This module provides routines for dealing with text containing ANSI color codes
 (Select Graphic Rendition/SGR/C<\e[...m> codes).
