@@ -34,6 +34,22 @@ our $re = $Text::ANSI::BaseUtil::re;
 1;
 # ABSTRACT: Routines for text containing ANSI color codes (non-wide functions only)
 
+=head1 DESCRIPTION
+
+This module provides routines for dealing with text that contains ANSI color
+codes, e.g. for determining its length/width (excluding the color codes),
+stripping the color codes, extracting the color codes, and so on.
+
+There is also a wide variant: L<Text::ANSI::WideUtil>. The difference is that
+::WideUtil can handle wide (full-width) Unicode characters, while ::NonWideUtil
+can also handle normal/halfwidth/ASCII characters.
+
+
 =head1 FUNCTIONS
 
 # INSERT_BLOCK: lib/Text/ANSI/Util.pm pod_nonwide_functions
+
+
+=head1 SEE ALSO
+
+L<Text::ANSI::WideUtil>
