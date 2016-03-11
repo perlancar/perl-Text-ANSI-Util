@@ -1,6 +1,6 @@
 Revision history for Text-ANSI-Util
 
-0.22    2016-03-11 (PERLANCAR) (unreleased)
+0.22    2016-03-11 (PERLANCAR)
 
         - [Removed features] Remove Text::ANSI::NonWideUtil (ugly name), but
           remove wide-character supporting functions (ta_mb*()) in
