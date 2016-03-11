@@ -514,7 +514,7 @@ sub _ta_pad {
             my $n = int(($width-$w)/2);
             $text = ($padchar x $n) . $text . ($padchar x ($width-$w-$n));
         } else {
-            $text .= ($padchar x ($width-$w));
+            $text .= ($padchar x ($width-$w)) if $width > $w;
         }
     }
     $text;
@@ -820,6 +820,6 @@ sub ta_mbsubstr {
 
 
 1;
-# ABSTRACT: Base for Text::ANSI::{Util,NonWideUtil,WideUtil}
+# ABSTRACT: Base for Text::ANSI::{Util,WideUtil}
 
-=for Pod::Coverage .+
+=for Pod::Coverage .*
