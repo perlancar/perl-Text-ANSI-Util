@@ -1,5 +1,3 @@
-Revision history for Text-ANSI-Util
-
 0.22    2016-03-11 (PERLANCAR)
 
         - [Removed features] Remove Text::ANSI::NonWideUtil (ugly name), but
