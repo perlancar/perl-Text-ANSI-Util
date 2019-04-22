@@ -138,7 +138,7 @@ sub _ta_wrap {
 
             #use Data::Dump; say "D:s=",Data::Dump::dump(\@s);
 
-            my $only_code = 1 if !@s;
+            my $only_code; $only_code = 1 if !@s;
             while (1) {
                 my ($s, $s_type) = splice @s, 0, 2;
                 $s_type //= '';
@@ -269,9 +269,9 @@ sub _ta_wrap {
         my $tw = $opts->{tab_width} // 8;
         die "Please specify a positive tab width" unless $tw > 0;
         my $optfli  = $opts->{flindent};
-        my $optfliw = Text::WideChar::Util::_get_indent_width($is_mb, $optfli, $tw) if defined $optfli;
+        my $optfliw; $optfliw = Text::WideChar::Util::_get_indent_width($is_mb, $optfli, $tw) if defined $optfli;
         my $optsli  = $opts->{slindent};
-        my $optsliw = Text::WideChar::Util::_get_indent_width($is_mb, $optsli, $tw) if defined $optsli;
+        my $optsliw; $optsliw = Text::WideChar::Util::_get_indent_width($is_mb, $optsli, $tw) if defined $optsli;
         my $pad = $opts->{pad};
         my $x = 0;
         my $y = 0;
