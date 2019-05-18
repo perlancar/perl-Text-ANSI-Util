@@ -301,6 +301,26 @@ If set to true, then instead of returning the wrapped string, function will
 return C<< [$wrapped, $stats] >> where C<$stats> is a hash containing some
 information like C<max_word_width>, C<min_word_width>.
 
+=item * keep_trailing_space => BOOL (default: 0)
+
+If set to true, then trailing space that separates words will be kept at the end
+of wrapped lines. This option is useful if you want to rejoin the lines later.
+Without this option set to true, wrapping this line at width=4 (quotes shown):
+
+ "some long   line"
+
+will result in:
+
+ "some"
+ "long"
+ "line"
+
+While if this option is set to true, the result will be:
+
+ "some "
+ "long "
+ "line"
+
 =back
 
 Performance: ~500/s on my Core i5 1.7GHz laptop for a ~1KB of text (with zero to
