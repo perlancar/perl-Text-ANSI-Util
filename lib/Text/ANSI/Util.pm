@@ -80,7 +80,7 @@ our $re = $Text::ANSI::BaseUtil::re;
  my $text = color("red")."red text".color("reset"); # => "\e[31mred text\e[0m"
  say ta_trunc($text, 5);                            # => "\e[31mred t\e[0m"
 
- # highlight the first occurence of some string within text
+ # highlight the first occurrence of some string within text
  say ta_highlight("some text", "ome", "\e[7m\e[31m");
 
  # ditto, but highlight all occurrences
@@ -178,7 +178,7 @@ This is the opposite of C<ta_strip()>, return only the ANSI codes in C<$text>.
 
 =head2 ta_highlight($text, $needle, $color) => STR
 
-Highlight the first occurence of C<$needle> in C<$text> with <$color>, taking
+Highlight the first occurrence of C<$needle> in C<$text> with <$color>, taking
 care not to mess up existing colors.
 
 C<$needle> can be a string or a Regexp object.
@@ -191,7 +191,7 @@ in C<ta_add_color_resets()>.
 
 =head2 ta_highlight_all($text, $needle, $color) => STR
 
-Like C<ta_highlight()>, but highlight all occurences instead of only the first.
+Like C<ta_highlight()>, but highlight all occurrences instead of only the first.
 
 =head2 ta_length($text) => INT
 
