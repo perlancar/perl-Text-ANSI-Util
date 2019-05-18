@@ -272,6 +272,7 @@ sub _ta_wrap {
         my $optfliw = Text::WideChar::Util::_get_indent_width($is_mb, $optfli, $tw) if defined $optfli;
         my $optsli  = $opts->{slindent};
         my $optsliw = Text::WideChar::Util::_get_indent_width($is_mb, $optsli, $tw) if defined $optsli;
+        my $optkts  = $opts->{keep_trailing_space} // 0;
         my $pad = $opts->{pad};
         my $x = 0;
         my $y = 0;
@@ -452,6 +453,7 @@ sub _ta_wrap {
                                 push @res, "\e[0m" if $crcode;
                             }
                             push @res, " " x ($width-$x) if $pad;
+                            push @res, " " if $ws_before && $optkts;
                             push @res, "\n";
                             $y++;
                             push @res, $crcode;
