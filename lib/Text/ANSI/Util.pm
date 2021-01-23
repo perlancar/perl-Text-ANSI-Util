@@ -1,6 +1,8 @@
 package Text::ANSI::Util;
 
+# AUTHORITY
 # DATE
+# DIST
 # VERSION
 
 use 5.010001;
@@ -342,4 +344,14 @@ Example:
 
 =head1 SEE ALSO
 
-L<Text::ANSI::WideUtil>
+L<String::Pad> provides padding function for strings that do not contain ASCII
+escape codes nor wide characters.
+
+L<Text::NonWideChar::Util> provides some other functions for strings that do not
+contain ASCII escape codes nor wide characters.
+
+L<Text::WideChar::Util> provides utilities for strings that do not contain ANSI
+escape codes I<but> contain wide characters.
+
+L<Text::ANSI::WideUtil> provides utilities for strings that contain ANSI escape
+codes I<and> wide characters.
