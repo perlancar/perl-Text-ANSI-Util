@@ -1,3 +1,10 @@
+0.231   2021-01-23  Released-By: PERLANCAR; Urgency: medium
+
+	- ta_wrap, ta_mbwrap: Add option keep_trailing_space.
+
+	- [doc] Mention some related modules.
+
+
 0.230   2019-04-22  Released-By: PERLANCAR
 
 	- No functional changes.
