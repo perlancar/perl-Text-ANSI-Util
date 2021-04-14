@@ -333,7 +333,9 @@ See also: C<ta_mbwrap()> in L<Text::ANSI::WideUtil>.
 
 =head1 FAQ
 
-=for BEGIN_BLOCK: why_split
+=over 11
+
+=back BEGIN_BLOCK: why_split
 
 =head2 Why split functionalities of wide character and color support into multiple modules/distributions?
 
@@ -341,7 +343,9 @@ Performance (see numbers in the function description), dependency
 (L<Unicode::GCString> is used for wide character support), and overhead (loading
 Unicode::GCString).
 
-=for END_BLOCK: why_split
+=over 11
+
+=back END_BLOCK: why_split
 
 =head2 How do I highlight a string case-insensitively?
 
