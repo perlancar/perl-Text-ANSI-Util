@@ -282,15 +282,15 @@ Options:
 
 =item * flindent => STR
 
-First line indent. See Text::WideChar::Util for more details.
+First line indent. Currently must not contain ANSI color codes or wide
+characters.
 
 =item * slindent => STR
 
-First line indent. See Text::WideChar::Util for more details.
+Subsequent line indent. Currently must not contain ANSI color codes or wide
+characters.
 
 =item * tab_width => INT (default: 8)
-
-First line indent. See Text::WideChar::Util for more details.
 
 =item * pad => BOOL (default: 0)
 
