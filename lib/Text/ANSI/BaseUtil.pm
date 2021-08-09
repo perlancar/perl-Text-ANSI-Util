@@ -523,6 +523,7 @@ sub _ta_pad {
     $padchar //= " ";
 
     my $w = $is_mb ? _ta_mbswidth0($text) : ta_length($text);
+    no warnings 'numeric'; # turns off 'negative repeat count' warning
     if ($is_trunc && $w > $width) {
         my $res = $is_mb ?
             ta_mbtrunc($text, $width, 1) : ta_trunc($text, $width, 1);
