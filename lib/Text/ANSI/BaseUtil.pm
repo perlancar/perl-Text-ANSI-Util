@@ -11,12 +11,163 @@ use warnings;
 
 use List::Util qw(min max);
 
-our $re       = qr/\e\[[0-9;]+m/s;
-our $re_mult  = qr/(?:\e\[[0-9;]+m)+/s;
+our $re         = qr/\e\[[0-9;]+m/s;
+our $re_capture = qr/\e\[([0-9;]+)m/s;
+our $re_mult    = qr/(?:\e\[[0-9;]+m)+/s;
 
 sub ta_detect {
     my $text = shift;
     $text =~ $re ? 1:0;
+}
+
+sub ta_set_state {
+    my $state = shift;
+    for my $code (@_) {
+        my $code = shift;
+        $code =~ /\A$re_capture\z/ or die "ta_set_state: Please supply ANSI SGR (ESC [ ... m) code in the argument instead of '$code'";
+        $state //= {};
+        my @nums = split /;+/, $1;
+        while (@nums) {
+            # for ignoring when we run out of elements unexpectedly
+            no warnings 'uninitialized';
+
+            my $num = shift @nums;
+            # we mostly list only codes that Konsole supports
+            if ($num == 0) {
+                $state->{reset}     = 1;
+                delete $state->{fgcolor};
+                delete $state->{bgcolor};
+                delete $state->{bold};
+                delete $state->{dim};
+                delete $state->{italic};
+                delete $state->{underline};
+                delete $state->{reverse};
+                delete $state->{conceal};
+                delete $state->{strike};
+            } elsif ($num == 1) {
+                delete $state->{reset};
+                $state->{bold}      = 1;
+            } elsif ($num == 2) {
+                delete $state->{reset};
+                $state->{dim}       = 1;
+            } elsif ($num == 3) {
+                delete $state->{reset};
+                $state->{italic}    = 1;
+            } elsif ($num == 4) {
+                delete $state->{reset};
+                $state->{underline} = 1;
+            } elsif ($num == 5) {
+                delete $state->{reset};
+                $state->{blink}     = 1;
+            } elsif ($num == 7) {
+                delete $state->{reset};
+                $state->{reverse}   = 1;
+            } elsif ($num == 8) {
+                delete $state->{reset};
+                $state->{conceal}   = 1;
+            } elsif ($num == 9) {
+                delete $state->{reset};
+                $state->{strike}    = 1;
+            } elsif ($num == 21) {
+                delete $state->{reset};
+                $state->{bold}      = 0;
+            } elsif ($num == 22) {
+                delete $state->{reset};
+                $state->{bold}      = 0;
+                $state->{dim}       = 0;
+            } elsif ($num == 23) {
+                delete $state->{reset};
+                $state->{italic}    = 0;
+            } elsif ($num == 24) {
+                delete $state->{reset};
+                $state->{underline} = 24;
+            } elsif ($num == 25) {
+                delete $state->{reset};
+                $state->{blink}     = 0;
+            } elsif ($num == 27) {
+                delete $state->{reset};
+                $state->{reverse}   = 0;
+            } elsif ($num == 28) {
+                delete $state->{reset};
+                $state->{conceal}   = 0;
+            } elsif ($num == 29) {
+                delete $state->{reset};
+                $state->{strike}    = 0;
+            } elsif ($num >= 30 && $num <= 37) {
+                delete $state->{reset};
+                $state->{fgcolor}   = $num;
+            } elsif ($num == 38) {
+                my $num2 = shift @nums;
+                if ($num2 == 5) {
+                    delete $state->{reset};
+                    $state->{fgcolor}   = "5;" . shift @nums;
+                } elsif ($num2 == 2) {
+                    delete $state->{reset};
+                    $state->{fgcolor}   = join(";", 2, splice(@nums, 0, 3));
+                }
+            } elsif ($num == 39) {
+                delete $state->{reset};
+                $state->{fgcolor}   = $num;
+            } elsif ($num >= 40 && $num <= 47) {
+                delete $state->{reset};
+                $state->{bgcolor}   = $num;
+            } elsif ($num == 48) {
+                my $num2 = shift @nums;
+                if ($num2 == 5) {
+                    delete $state->{reset};
+                    $state->{bgcolor}   = "5;" . shift @nums;
+                } elsif ($num2 == 2) {
+                    delete $state->{reset};
+                    $state->{bgcolor}   = join(";", 2, splice(@nums, 0, 3));
+                }
+            } elsif ($num == 49) {
+                delete $state->{reset};
+                $state->{bgcolor}   = $num;
+            }
+        }
+    } # for code
+    $state;
+}
+
+sub ta_state_to_code {
+    my $state = shift;
+    my @nums;
+    if ($state->{reset}) {
+        push @nums, 0;
+        goto RETURN_CODE;
+    }
+    if (defined $state->{fgcolor}) {
+        push @nums, $state->{fgcolor};
+    }
+    if (defined $state->{bgcolor}) {
+        push @nums, $state->{bgcolor};
+    }
+    if (defined $state->{bold}) {
+        push @nums, $state->{bold} ? 1 : 21;
+    }
+    if (defined $state->{dim}) {
+        push @nums, $state->{dim} ? 1 : 22;
+    }
+    if (defined $state->{italic}) {
+        push @nums, $state->{italic} ? 3 : 23;
+    }
+    if (defined $state->{underline}) {
+        push @nums, $state->{underline} ? 4 : 24;
+    }
+    if (defined $state->{blink}) {
+        push @nums, $state->{blink} ? 5 : 25;
+    }
+    if (defined $state->{reverse}) {
+        push @nums, $state->{reverse} ? 7 : 27;
+    }
+    if (defined $state->{conceal}) {
+        push @nums, $state->{conceal} ? 8 : 28;
+    }
+    if (defined $state->{strike}) {
+        push @nums, $state->{strike} ? 9 : 29;
+    }
+  RETURN_CODE:
+    @nums ? "\e[".join(";",@nums)."m" : "";
 }
 
 sub ta_length {
