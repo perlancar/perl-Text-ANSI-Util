@@ -436,9 +436,9 @@ sub _ta_wrap {
         my $tw = $opts->{tab_width} // 8;
         die "Please specify a positive tab width" unless $tw > 0;
         my $optfli  = $opts->{flindent};
-        my $optfliw; $optfliw = $is_mb ? Text::WideChar::Util::_mbs_indent_width($optfli, $tw) : _indent_width($optfli, $tw) if defined $optfli;
+        my $optfliw; $optfliw = $is_mb ? Text::WideChar::Util::_get_indent_width(1, $optfli, $tw) : _indent_width($optfli, $tw) if defined $optfli;
         my $optsli  = $opts->{slindent};
-        my $optsliw; $optsliw = $is_mb ? Text::WideChar::Util::_mbs_indent_width($optsli, $tw) : _indent_width($optsli, $tw) if defined $optsli;
+        my $optsliw; $optsliw = $is_mb ? Text::WideChar::Util::_get_indent_width(1, $optsli, $tw) : _indent_width($optsli, $tw) if defined $optsli;
         my $optkts  = $opts->{keep_trailing_space} // 0;
         my $pad = $opts->{pad};
         my $x = 0;
@@ -482,7 +482,7 @@ sub _ta_wrap {
                     $fliw = $optfliw;
                     if ($termt eq 's') {
                         $fli  //= $pterm;
-                        $fliw //= $is_mb ? Text::WideChar::Util::_mbs_indent_width($fli, $tw) : _indent_width($fli, $tw);
+                        $fliw //= $is_mb ? Text::WideChar::Util::_get_indent_width(1, $fli, $tw) : _indent_width($fli, $tw);
                     } else {
                         $fli  //= "";
                         $fliw //= 0;
@@ -496,7 +496,7 @@ sub _ta_wrap {
                             if ($termst[$j] eq 's') {
                                 if ($pterms[$j] =~ /\n([ \t]+)/) {
                                     $sli  = $1;
-                                    $sliw = $is_mb ? Text::WideChar::Util::_mbs_indent_width($sli, $tw) : _indent_width($sli, $tw);
+                                    $sliw = $is_mb ? Text::WideChar::Util::_get_indent_width(1, $sli, $tw) : _indent_width($sli, $tw);
                                     last;
                                 }
                             }
