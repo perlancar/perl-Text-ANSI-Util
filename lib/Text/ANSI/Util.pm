@@ -1,16 +1,16 @@
 package Text::ANSI::Util;
 
+use 5.010001;
+use strict 'subs', 'vars';
+use warnings;
+
+use Exporter qw(import);
+
 # AUTHORITY
 # DATE
 # DIST
 # VERSION
 
-use 5.010001;
-use strict 'subs', 'vars';
-use warnings;
-
-require Exporter;
-our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(
                        ta_add_color_resets
                        ta_detect
