@@ -1,15 +1,15 @@
 package Text::ANSI::BaseUtil;
 
-# AUTHORITY
-# DATE
-# DIST
-# VERSION
-
 use 5.010001;
 use strict;
 use warnings;
 
 use List::Util qw(min max);
+
+# AUTHORITY
+# DATE
+# DIST
+# VERSION
 
 our $re       = qr/\e\[[0-9;]+m/s;
 our $re_mult  = qr/(?:\e\[[0-9;]+m)+/s;
